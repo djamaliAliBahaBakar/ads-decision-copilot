@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// USERS
+// ============================================
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId   String   @unique
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  ads       Ad[]
+  decisions Decision[]
+  rules     UserRule[]
+}
+
+// ============================================
+// ADS DATA
+// ============================================
+
+model Ad {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  adName       String
+  campaignName String?
+  angle        String?  // PROBLEME, MECANISME, PREUVE, etc.
+  
+  cpl          Float
+  spend        Float
+  leads        Int
+  ctr          Float?
+  roas         Float?
+  
+  date         DateTime
+  weekNumber   Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  decisions    Decision[]
+  
+  @@index([userId, date])
+  @@index([userId, angle])
+}
+
+// ============================================
+// DECISIONS
+// ============================================
+
+model Decision {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  adId      String
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+  
+  action    String   // KILL, SCALE, HOLD, TEST, FIX
+  reason    String   @db.Text
+  hypothesis String?  @db.Text
+  expectedEffect String? @db.Text
+  confidence Int?    // 1-5
+  
+  cplAtDecision Float
+  cplTrend3d    Float?
+  daysRunning   Int?
+  
+  actualSavings Float?
+  wasCorrect    Boolean?
+  postMortemNotes String? @db.Text
+  resultFilledAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId, createdAt])
+}
+
+// ============================================
+// USER RULES (pour Tiltmeter)
+// ============================================
+
+model UserRule {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  ruleType  String   // "kill_if_cpl", "scale_if_roas", etc.
+  threshold Float
+  days      Int
+  isActive  Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId, isActive])
+}
