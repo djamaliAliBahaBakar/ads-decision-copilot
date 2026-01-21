@@ -80,6 +80,10 @@ model Decision {
   wasCorrect    Boolean?
   postMortemNotes String? @db.Text
   resultFilledAt DateTime?
+
+    // TILTMETER : suivi discipline
+  followedRule  Boolean?  // user a-t-il suivi une règle applicable ?
+  appliedRuleId String?   // laquelle ?
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -100,6 +104,9 @@ model UserRule {
   threshold Float
   days      Int
   isActive  Boolean  @default(true)
+
+  // Human-readable
+  description String? // "Kill si CPL > €10 pendant 3j"
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
