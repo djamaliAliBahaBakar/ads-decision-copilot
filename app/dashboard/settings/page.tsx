@@ -10,6 +10,7 @@ import { MetaConnectButton } from '@/components/meta/meta-connect-button'
 import { CardSkeleton } from '@/components/ui/loading-skeleton'
 import { Trash2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
+import { DigestSettings } from '@/components/digest/digest-settings'
 
 interface UserRule {
   id: string
@@ -107,6 +108,9 @@ export default function SettingsPage() {
 
       {/* 🔥 META API INTEGRATION */}
       <MetaConnectButton />
+
+       {/* 🔥 ADD THIS */}
+      <DigestSettings />
 
       {/* Créer nouvelle règle */}
       <Card className="p-6 slide-up">

@@ -20,6 +20,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   metaAccount MetaAccount?
+
+  emailDigests EmailDigest[]
   
   ads       Ad[]
   decisions Decision[]
@@ -146,4 +148,33 @@ model MetaAccount {
   updatedAt DateTime @updatedAt
   
   @@index([userId])
+}
+
+model EmailDigest {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Digest data
+  weekStartDate DateTime
+  weekEndDate   DateTime
+  
+  disciplineScore Float
+  economiesSaved  Float
+  bestDecision    String?
+  worstDecision   String?
+  cplTrend        Float?
+  topInsight      String?
+  
+  // Email tracking
+  sentAt    DateTime?
+  openedAt  DateTime?
+  
+  // Settings
+  isEnabled Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId, weekStartDate])
 }
