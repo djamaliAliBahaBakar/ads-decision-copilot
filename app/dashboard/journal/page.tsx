@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { getAllDecisions } from '@/app/actions/decisions'
 import { DecisionDetailsModal } from '@/components/decisions/decision-details-modal'
+import { WhatIfModal } from '@/components/whatif/whatif-modal'
+import { DecisionRow } from '@/components/journal/decision-row'
+import { TableSkeleton } from '@/components/ui/loading-skeleton'
 
 interface Decision {
   id: string
@@ -25,9 +27,16 @@ interface Decision {
 export default function JournalPage() {
   const [decisions, setDecisions] = useState<Decision[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filterAction, setFilterAction] = useState<string>('')
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null)
   const [showModal, setShowModal] = useState(false)
+  
+  const [whatIfDecision, setWhatIfDecision] = useState<{
+    id: string
+    adName: string
+    daysRunning: number
+  } | null>(null)
 
   useEffect(() => {
     fetchDecisions()
@@ -35,10 +44,12 @@ export default function JournalPage() {
 
   const fetchDecisions = async () => {
     try {
+      setError(null)
       const data = await getAllDecisions()
       setDecisions(data)
-    } catch (error) {
-      console.error('Error fetching decisions:', error)
+    } catch (err) {
+      setError('Erreur chargement décisions')
+      console.error('Error fetching decisions:', err)
     } finally {
       setLoading(false)
     }
@@ -53,25 +64,58 @@ export default function JournalPage() {
     setShowModal(true)
   }
 
+  const handleWhatIf = (decision: Decision) => {
+    setWhatIfDecision({
+      id: decision.id,
+      adName: decision.adName,
+      daysRunning: 7,
+    })
+  }
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <p className="text-red-900 font-semibold">❌ {error}</p>
+          <Button
+            onClick={fetchDecisions}
+            className="mt-4"
+            variant="outline"
+          >
+            Réessayer
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
-    return <div className="p-8">Chargement...</div>
+    return (
+      <div className="p-4 md:p-8 space-y-8">
+        <div>
+          <div className="h-8 skeleton rounded w-96 mb-2"></div>
+          <div className="h-4 skeleton rounded w-64"></div>
+        </div>
+        <TableSkeleton />
+      </div>
+    )
   }
 
   return (
-    <div className="p-8 space-y-8">
+    <div className="p-4 md:p-8 space-y-8 fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Journal des Décisions</h1>
+        <h1 className="text-3xl font-bold mb-2">📋 Journal des Décisions</h1>
         <p className="text-gray-600">Historique de toutes tes décisions</p>
       </div>
 
       {/* Filtres */}
-      <Card className="p-6">
-        <div className="flex gap-4 items-center">
-          <label className="text-sm font-medium">Filtrer par action :</label>
+      <Card className="p-4 md:p-6 slide-up">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+          <label className="text-sm font-medium">Filtrer :</label>
           <select
             value={filterAction}
             onChange={e => setFilterAction(e.target.value)}
-            className="border rounded px-3 py-2"
+            className="border rounded px-3 py-2 text-sm w-full md:w-auto"
           >
             <option value="">Toutes</option>
             <option value="KILL">🔴 KILL</option>
@@ -87,9 +131,14 @@ export default function JournalPage() {
       </Card>
 
       {/* Table */}
-      <Card className="p-6">
+      <Card className="p-4 md:p-6 slide-up">
         {filteredDecisions.length === 0 ? (
-          <p className="text-gray-500">Aucune décision pour le moment</p>
+          <div className="text-center py-12">
+            <p className="text-gray-500 text-lg">📭 Aucune décision pour le moment</p>
+            <p className="text-gray-400 text-sm mt-2">
+              Crée des décisions sur le Decision Board
+            </p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -97,58 +146,22 @@ export default function JournalPage() {
                 <tr className="border-b">
                   <th className="text-left p-2">Date</th>
                   <th className="text-left p-2">Ad</th>
-                  <th className="text-left p-2">Angle</th>
+                  <th className="text-left p-2 hidden md:table-cell">Angle</th>
                   <th className="text-center p-2">Action</th>
-                  <th className="text-left p-2">Raison</th>
+                  <th className="text-left p-2 hidden lg:table-cell">Raison</th>
                   <th className="text-right p-2">CPL</th>
-                  <th className="text-right p-2">Confiance</th>
-                  <th className="text-center p-2"></th>
+                  <th className="text-right p-2">Conf.</th>
+                  <th className="text-center p-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredDecisions.map(decision => (
-                  <tr key={decision.id} className="border-b hover:bg-gray-50">
-                    <td className="p-2 text-xs">
-                      {new Date(decision.createdAt).toLocaleDateString('fr-FR')}
-                    </td>
-                    <td className="p-2 font-medium">{decision.adName}</td>
-                    <td className="p-2">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                        {decision.angle}
-                      </span>
-                    </td>
-                    <td className="p-2 text-center">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        decision.action === 'KILL' ? 'bg-red-100 text-red-800' :
-                        decision.action === 'SCALE' ? 'bg-green-100 text-green-800' :
-                        decision.action === 'HOLD' ? 'bg-yellow-100 text-yellow-800' :
-                        decision.action === 'TEST' ? 'bg-blue-100 text-blue-800' :
-                        'bg-orange-100 text-orange-800'
-                      }`}>
-                        {decision.action}
-                      </span>
-                    </td>
-                    <td className="p-2 text-xs text-gray-600">{decision.reason}</td>
-                    <td className="p-2 text-right">€{decision.cplAtDecision.toFixed(2)}</td>
-                    <td className="p-2 text-right">
-                      <span className={`text-xs font-semibold ${
-                        decision.confidence >= 4 ? 'text-green-600' :
-                        decision.confidence >= 2 ? 'text-yellow-600' :
-                        'text-gray-600'
-                      }`}>
-                        {decision.confidence}/5
-                      </span>
-                    </td>
-                    <td className="p-2 text-center">
-                      <Button
-                        onClick={() => handleViewDetails(decision)}
-                        size="sm"
-                        variant="outline"
-                      >
-                        Détails
-                      </Button>
-                    </td>
-                  </tr>
+                  <DecisionRow
+                    key={decision.id}
+                    decision={decision}
+                    onViewDetails={handleViewDetails}
+                    onWhatIf={handleWhatIf}
+                  />
                 ))}
               </tbody>
             </table>
@@ -157,25 +170,25 @@ export default function JournalPage() {
       </Card>
 
       {/* Stats rapides */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card className="p-4">
-          <p className="text-xs text-gray-600 mb-1">Total décisions</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 hover:shadow-lg slide-up">
+          <p className="text-xs text-gray-600 mb-1">Total</p>
           <p className="text-2xl font-bold">{decisions.length}</p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 hover:shadow-lg slide-up" style={{ animationDelay: '0.1s' }}>
           <p className="text-xs text-gray-600 mb-1">KILL</p>
           <p className="text-2xl font-bold text-red-600">
             {decisions.filter(d => d.action === 'KILL').length}
           </p>
         </Card>
-        <Card className="p-4">
+        <Card className="p-4 hover:shadow-lg slide-up" style={{ animationDelay: '0.2s' }}>
           <p className="text-xs text-gray-600 mb-1">SCALE</p>
           <p className="text-2xl font-bold text-green-600">
             {decisions.filter(d => d.action === 'SCALE').length}
           </p>
         </Card>
-        <Card className="p-4">
-          <p className="text-xs text-gray-600 mb-1">Confiance avg</p>
+        <Card className="p-4 hover:shadow-lg slide-up" style={{ animationDelay: '0.3s' }}>
+          <p className="text-xs text-gray-600 mb-1">Conf. avg</p>
           <p className="text-2xl font-bold">
             {(decisions.length > 0
               ? (decisions.reduce((sum, d) => sum + d.confidence, 0) / decisions.length).toFixed(1)
@@ -184,10 +197,21 @@ export default function JournalPage() {
         </Card>
       </div>
 
+      {/* Modals */}
       {showModal && selectedDecision && (
         <DecisionDetailsModal
           decision={selectedDecision}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {whatIfDecision && (
+        <WhatIfModal
+          isOpen={!!whatIfDecision}
+          onClose={() => setWhatIfDecision(null)}
+          decisionId={whatIfDecision.id}
+          adName={whatIfDecision.adName}
+          daysRunning={whatIfDecision.daysRunning}
         />
       )}
     </div>

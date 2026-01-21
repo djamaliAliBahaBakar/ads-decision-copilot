@@ -18,6 +18,8 @@ model User {
   email     String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  metaAccount MetaAccount?
   
   ads       Ad[]
   decisions Decision[]
@@ -49,7 +51,14 @@ model Ad {
   updatedAt    DateTime @updatedAt
   
   decisions    Decision[]
+
+   // Meta sync fields
+  metaAdId       String?  // Facebook Ad ID
+  metaCampaignId String?  // Facebook Campaign ID
+  impressions    Int?
+  clicks         Int?
   
+  @@unique([userId, metaAdId])
   @@index([userId, date])
   @@index([userId, angle])
 }
@@ -112,4 +121,29 @@ model UserRule {
   updatedAt DateTime @updatedAt
   
   @@index([userId, isActive])
+}
+
+model MetaAccount {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Meta credentials
+  accessToken String    // Encrypted in production
+  refreshToken String?   
+  accountId   String     // Meta Ad Account ID
+  accountName String?
+  
+  // Sync tracking
+  lastSyncAt  DateTime?
+  syncStatus  String    @default("idle") // idle, syncing, error
+  syncError   String?
+  
+  // Permissions
+  isActive    Boolean   @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([userId])
 }
