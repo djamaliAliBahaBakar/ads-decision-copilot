@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
 import { getOrCreateUser } from '@/lib/get-or-create-user'
@@ -140,9 +139,9 @@ export async function generateWeeklyDigest(userId: string) {
     })
 
     // Send email
-    //await sendDigestEmail(user, digest, decisions)
-
-    console.log(`Digest email sent to ${user.email}`)
+    console.log(`Attempting to send digest email to ${user.email}...`)
+    const emailResult = await sendDigestEmail(user, digest, decisions)
+    console.log(`✅ Digest email sent successfully to ${user.email}`, emailResult)
 
     // Update sentAt
     await prisma.emailDigest.update({
@@ -252,12 +251,18 @@ async function sendDigestEmail(user: any, digest: any, decisions: any[]) {
     </html>
   `
 
-  await resend.emails.send({
-    from: 'Tiltmeter <digest@tiltmeter.app>',
+  // Use Resend test address in development, custom domain in production
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
+
+  const result = await resend.emails.send({
+    from: fromEmail,
     to: user.email,
     subject: `📊 Ta Semaine Tiltmeter - ${digest.disciplineScore.toFixed(0)}% Discipline`,
     html,
   })
+
+  console.log('Resend API response:', result)
+  return result
 }
 
 // Get user's digest settings

@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getWeekData } from '@/app/actions/ads'
 import Link from 'next/link'
-import { DisciplineWidget } from '@/components/tiltmeter/discipline-widget'
+// import { DisciplineWidget } from '@/components/tiltmeter/discipline-widget' // MVP: Désactivé
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import {
   LineChart,
@@ -64,7 +64,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="p-8 space-y-4">
+      <div className="space-y-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <p className="text-red-900 font-semibold">❌ {error}</p>
           <Button
@@ -81,7 +81,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="p-8 space-y-8">
+      <div className="space-y-8">
         <div>
           <div className="h-8 skeleton rounded w-64 mb-2"></div>
           <div className="h-4 skeleton rounded w-96"></div>
@@ -101,12 +101,19 @@ export default function DashboardPage() {
 
   if (!data) {
     return (
-      <div className="p-8 flex flex-col items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold">📊 Pas de données</h2>
-          <p className="text-gray-600">Upload un fichier CSV pour commencer</p>
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">📊</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">Pas de données</h2>
+          <p className="text-gray-600 max-w-md">
+            Uploadez votre premier fichier CSV pour commencer à analyser vos campagnes Meta Ads
+          </p>
           <Link href="/dashboard/upload">
-            <Button className="mt-4">📤 Upload CSV</Button>
+            <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+              📤 Upload CSV
+            </Button>
           </Link>
         </div>
       </div>
@@ -114,10 +121,12 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8 fade-in">
+    <div className="space-y-8 fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">📊 Dashboard</h1>
-        <p className="text-gray-600">Vue d'ensemble de tes ads cette semaine</p>
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          Dashboard
+        </h1>
+        <p className="text-gray-600">Vue d'ensemble de vos campagnes cette semaine</p>
       </div>
 
       {/* 4 Metrics Cards - Responsive */}
@@ -149,10 +158,11 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      {/* Discipline Widget */}
+      {/* MVP: Discipline Widget désactivé pour simplifier
       <div className="slide-up" style={{ animationDelay: '0.4s' }}>
         <DisciplineWidget />
       </div>
+      */}
 
       {/* Graph */}
       <Card className="p-6 hover:shadow-lg slide-up" style={{ animationDelay: '0.5s' }}>

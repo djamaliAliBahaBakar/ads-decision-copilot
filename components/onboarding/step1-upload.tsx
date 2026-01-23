@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { parseCSV, AdRow } from '@/lib/csv-parser'
-import { Upload, FileText, Download, CheckCircle2 } from 'lucide-react'
+import { parseCSV, ParseError } from '@/lib/csv-parser'
+import { Upload, FileText, Download, CheckCircle2, AlertCircle } from 'lucide-react'
 
 interface Step1Props {
   onComplete: (data: any) => void
@@ -14,6 +14,9 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
   const [uploading, setUploading] = useState(false)
   const [uploadedRows, setUploadedRows] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [uploadStats, setUploadStats] = useState<any>(null)
+  const [parseErrors, setParseErrors] = useState<ParseError[]>([])
+  const [correctedCSV, setCorrectedCSV] = useState<string | null>(null)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -44,39 +47,66 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
   const handleFile = async (file: File) => {
     setUploading(true)
     setError(null)
+    setParseErrors([])
+    setCorrectedCSV(null)
 
     try {
       // Lire le fichier
       const text = await file.text()
-      
-      // Parser avec csv-parser.ts existant
-      const rows = await parseCSV(text)
+
+      // Parser avec csv-parser.ts amélioré
+      const result = await parseCSV(text)
+
+      // S'il y a des erreurs de parsing
+      if (result.errors.length > 0) {
+        setParseErrors(result.errors)
+        setCorrectedCSV(result.correctedCSV || null)
+
+        // Si aucune donnée valide
+        if (result.data.length === 0) {
+          throw new Error(
+            `❌ Impossible d'importer le fichier : ${result.errors.length} erreur(s) détectée(s)\n\n` +
+            `Consultez les détails ci-dessous pour corriger votre fichier.`
+          )
+        }
+
+        // S'il y a des données valides ET des erreurs
+        throw new Error(
+          `⚠️ Import partiel : ${result.errors.length} ligne(s) ignorée(s)\n\n` +
+          `${result.data.length} ligne(s) valide(s) ont été trouvées, mais certaines lignes contiennent des erreurs.\n\n` +
+          `Consultez les détails ci-dessous.`
+        )
+      }
 
       // Validation : minimum 7 jours de données
-      const uniqueDates = new Set(rows.map(r => r.date))
+      const uniqueDates = new Set(result.data.map(r => r.date))
       if (uniqueDates.size < 7) {
-        throw new Error('Le fichier doit contenir au moins 7 jours de données différentes')
+        throw new Error(
+          `❌ Pas assez de données\n\n` +
+          `Le fichier contient seulement ${uniqueDates.size} jour(s) de données.\n` +
+          `Minimum requis : 7 jours différents.\n\n` +
+          `💡 Astuce : Téléchargez le template qui contient 14 jours de données exemples.`
+        )
       }
 
       // Envoyer au backend
       const response = await fetch('/api/onboarding/upload-csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rows }),
+        body: JSON.stringify({ rows: result.data }),
       })
 
       if (!response.ok) {
         throw new Error('Erreur lors de l\'enregistrement des données')
       }
 
-      const result = await response.json()
-      
-      setUploadedRows(result.count)
-      
-      // Passer au step suivant après 1.5s
-      setTimeout(() => {
-        onComplete(result)
-      }, 1500)
+      const apiResult = await response.json()
+
+      setUploadedRows(apiResult.count)
+      setUploadStats(apiResult)
+
+      // Ne pas passer automatiquement au step suivant
+      // L'utilisateur doit confirmer en cliquant sur "C'est correct"
 
     } catch (err: any) {
       setError(err.message || 'Erreur lors du parsing du CSV')
@@ -86,17 +116,65 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
   }
 
   const downloadTemplate = () => {
-    const template = `ad_name,campaign_name,angle,cpl,spend,leads,ctr,roas,date
-Ad Test 1,Campagne Webinaire,PROBLEME,12.5,250,20,1.2,2.5,2026-01-15
-Ad Test 2,Campagne Webinaire,MECANISME,8.3,166,20,1.5,3.0,2026-01-15
-Ad Test 3,Campagne Lead Magnet,PREUVE,15.2,304,20,0.9,1.8,2026-01-16`
+    // Générer 14 jours de données réalistes
+    const today = new Date()
+    const rows: string[] = []
 
-    const blob = new Blob([template], { type: 'text/csv' })
+    // Campagnes avec différents niveaux de performance
+    const campaigns = [
+      { name: 'Campagne Webinaire', angle: 'PROBLEME', baseCpl: 12, baseSpend: 80 },
+      { name: 'Campagne Lead Magnet', angle: 'MECANISME', baseCpl: 8, baseSpend: 60 },
+      { name: 'Campagne Démo Gratuite', angle: 'PREUVE', baseCpl: 15, baseSpend: 100 },
+    ]
+
+    // Générer 14 jours de données pour chaque campagne
+    for (let i = 13; i >= 0; i--) {
+      const date = new Date(today)
+      date.setDate(date.getDate() - i)
+      const dateStr = date.toISOString().split('T')[0]
+
+      campaigns.forEach((campaign, idx) => {
+        // Variation réaliste jour par jour
+        const variation = 1 + (Math.random() * 0.4 - 0.2) // ±20%
+        const cpl = (campaign.baseCpl * variation).toFixed(2)
+        const spend = Math.round(campaign.baseSpend * variation)
+        const leads = Math.round(spend / parseFloat(cpl))
+        const ctr = (1.0 + Math.random() * 0.5).toFixed(2)
+        const roas = (2.0 + Math.random()).toFixed(1)
+
+        rows.push(
+          `Ad ${idx + 1} - Jour ${14 - i},${campaign.name},${campaign.angle},${cpl},${spend},${leads},${ctr},${roas},${dateStr}`
+        )
+      })
+    }
+
+    const template = `# INSTRUCTIONS : Ce fichier est pré-rempli avec 14 jours de données exemples (42 lignes)
+# Vous pouvez soit :
+#   1. MODIFIER les données directement dans ce fichier (remplacer par vos vraies données)
+#   2. COPIER vos données depuis Excel et remplacer tout (sauf la ligne d'en-têtes)
+#   3. UTILISER tel quel pour tester l'outil
+#
+# COLONNES OBLIGATOIRES : ad_name, cpl, spend, leads, date
+# COLONNES OPTIONNELLES : campaign_name, angle, ctr, roas
+#
+# FORMAT :
+#   - cpl : Coût par Lead en euros (ex: 12.50)
+#   - spend : Dépenses en euros (ex: 250)
+#   - leads : Nombre de conversions (ex: 20)
+#   - date : Format YYYY-MM-DD (ex: 2026-01-20)
+#   - angle : PROBLEME, MECANISME ou PREUVE
+#
+# ⚠️ NE PAS SUPPRIMER LA LIGNE CI-DESSOUS (en-têtes des colonnes)
+ad_name,campaign_name,angle,cpl,spend,leads,ctr,roas,date
+${rows.join('\n')}`
+
+    const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = 'template_ads_decision_copilot.csv'
+    a.download = 'template_adsdecision.csv'
     a.click()
+    URL.revokeObjectURL(url)
   }
 
   return (
@@ -164,20 +242,160 @@ Ad Test 3,Campagne Lead Magnet,PREUVE,15.2,304,20,0.9,1.8,2026-01-16`
         </div>
       )}
 
-      {/* Succès */}
-      {uploadedRows && (
-        <div className="flex items-center justify-center gap-3 p-8 bg-green-50 border border-green-200 rounded-lg">
-          <CheckCircle2 className="w-6 h-6 text-green-600" />
-          <p className="text-green-800 font-medium">
-            {uploadedRows} lignes importées avec succès
-          </p>
+      {/* Écran de vérification post-import */}
+      {uploadedRows && uploadStats && (
+        <div className="space-y-6">
+          {/* Header de confirmation */}
+          <div className="flex items-center justify-center gap-3 p-6 bg-green-50 border-2 border-green-200 rounded-lg">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
+            <div>
+              <h3 className="text-xl font-bold text-green-900">Import réussi!</h3>
+              <p className="text-sm text-green-700">Vérifiez les données ci-dessous</p>
+            </div>
+          </div>
+
+          {/* Stats en grille */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
+              <p className="text-3xl font-bold text-blue-900">{uploadStats.campaignsCount}</p>
+              <p className="text-sm text-blue-700 mt-1">campagnes importées</p>
+            </div>
+
+            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
+              <p className="text-3xl font-bold text-purple-900">{uploadStats.totalLeads}</p>
+              <p className="text-sm text-purple-700 mt-1">leads générés</p>
+            </div>
+
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg text-center">
+              <p className="text-3xl font-bold text-orange-900">€{Math.round(uploadStats.totalSpend)}</p>
+              <p className="text-sm text-orange-700 mt-1">dépenses totales</p>
+            </div>
+
+            <div className="p-4 bg-teal-50 border border-teal-200 rounded-lg text-center">
+              <p className="text-sm text-teal-900 font-semibold">
+                {new Date(uploadStats.minDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                {' - '}
+                {new Date(uploadStats.maxDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+              </p>
+              <p className="text-sm text-teal-700 mt-1">période</p>
+            </div>
+          </div>
+
+          {/* Détails supplémentaires */}
+          <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <strong>{uploadedRows} lignes</strong> de données importées
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              CPL moyen : <strong>€{uploadStats.avgCpl.toFixed(2)}</strong>
+            </p>
+          </div>
+
+          {/* Bouton de confirmation */}
+          <Button
+            onClick={() => onComplete(uploadStats)}
+            size="lg"
+            className="w-full"
+          >
+            ✅ C'est correct, continuer
+          </Button>
         </div>
       )}
 
-      {/* Erreur */}
+      {/* Erreur avec détails */}
       {error && (
-        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-red-800 text-sm">{error}</p>
+        <div className="mt-4 space-y-4">
+          <div className="p-4 bg-red-50 border-2 border-red-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-red-800 text-sm whitespace-pre-line font-medium">
+                  {error}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Détails des erreurs ligne par ligne */}
+          {parseErrors.length > 0 && (
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <h4 className="font-semibold text-orange-900 mb-3 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Détails des erreurs ({parseErrors.length} ligne{parseErrors.length > 1 ? 's' : ''})
+              </h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {parseErrors.slice(0, 10).map((err, idx) => (
+                  <div key={idx} className="text-sm bg-white p-3 rounded border border-orange-200">
+                    <p className="font-mono text-orange-900">
+                      <strong>Ligne {err.line}</strong> - Colonne "{err.field}"
+                    </p>
+                    <p className="text-orange-800 mt-1">{err.message}</p>
+                    {err.value !== undefined && err.value !== null && (
+                      <p className="text-orange-600 mt-1 font-mono text-xs">
+                        Valeur actuelle : "{err.value}"
+                      </p>
+                    )}
+                  </div>
+                ))}
+                {parseErrors.length > 10 && (
+                  <p className="text-sm text-orange-700 italic">
+                    ... et {parseErrors.length - 10} autre(s) erreur(s)
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Bouton pour télécharger le CSV corrigé */}
+          {correctedCSV && (
+            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+              <h4 className="font-semibold text-green-900 mb-2 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" />
+                Solution automatique disponible
+              </h4>
+              <p className="text-sm text-green-800 mb-3">
+                Nous avons corrigé automatiquement les lignes valides. Téléchargez le fichier corrigé et réimportez-le.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (correctedCSV) {
+                    const blob = new Blob([correctedCSV], { type: 'text/csv;charset=utf-8;' })
+                    const url = URL.createObjectURL(blob)
+                    const a = document.createElement('a')
+                    a.href = url
+                    a.download = 'donnees_corrigees.csv'
+                    a.click()
+                    URL.revokeObjectURL(url)
+                  }
+                }}
+                className="gap-2 bg-green-600 text-white hover:bg-green-700"
+              >
+                <Download className="w-4 h-4" />
+                Télécharger le fichier corrigé
+              </Button>
+            </div>
+          )}
+
+          {/* Suggestion de re-télécharger le template */}
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800 mb-2">
+              💡 <strong>Problème de format ?</strong>
+            </p>
+            <p className="text-sm text-blue-700 mb-3">
+              Re-téléchargez le template et copiez-collez vos données directement dedans pour éviter les erreurs.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadTemplate}
+              className="gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Re-télécharger le template
+            </Button>
+          </div>
         </div>
       )}
 

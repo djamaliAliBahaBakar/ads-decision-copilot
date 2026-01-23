@@ -85,7 +85,7 @@ export default function SettingsPage() {
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className="space-y-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <p className="text-red-900 font-semibold">❌ {error}</p>
           <Button onClick={fetchRules} className="mt-4" variant="outline">
@@ -97,10 +97,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-8 fade-in">
+    <div className="max-w-4xl mx-auto space-y-8 fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">⚙️ Paramètres</h1>
-        <p className="text-gray-600">Configure tes préférences et intégrations</p>
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          Paramètres
+        </h1>
+        <p className="text-gray-600">Configuration et intégrations de votre compte</p>
       </div>
 
       {/* Discipline Widget */}

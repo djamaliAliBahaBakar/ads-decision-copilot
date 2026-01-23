@@ -100,10 +100,14 @@ export function MetaConnectButton() {
           <p className="text-sm text-green-800 mb-1">
             Compte: <strong>{metaAccount.accountName}</strong>
           </p>
-          <p className="text-xs text-green-700">
+          <p className="text-xs text-green-700 mb-1">
             Dernier sync: {metaAccount.lastSyncAt
               ? new Date(metaAccount.lastSyncAt).toLocaleString('fr-FR')
               : 'Jamais'}
+          </p>
+          <p className="text-xs text-green-600 flex items-center gap-1">
+            <span className="inline-block w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            Sync auto quotidien activé
           </p>
         </div>
 

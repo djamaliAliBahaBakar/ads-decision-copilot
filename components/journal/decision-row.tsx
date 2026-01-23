@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Wand2, Info } from 'lucide-react'
+import { /* Wand2, */ Info } from 'lucide-react' // MVP: Wand2 désactivé
 
 interface Decision {
   id: string
@@ -18,7 +18,7 @@ interface Decision {
 interface DecisionRowProps {
   decision: Decision
   onViewDetails: (decision: Decision) => void
-  onWhatIf: (decision: Decision) => void
+  onWhatIf?: (decision: Decision) => void // MVP: Optional maintenant
 }
 
 const actionLabels: Record<string, { bg: string; text: string; emoji: string }> = {
@@ -79,6 +79,7 @@ export function DecisionRow({ decision, onViewDetails, onWhatIf }: DecisionRowPr
         </span>
       </td>
       <td className="p-2 text-center space-x-1 flex justify-center">
+        {/* MVP: What-If désactivé
         <Button
           onClick={() => onWhatIf(decision)}
           size="sm"
@@ -88,7 +89,8 @@ export function DecisionRow({ decision, onViewDetails, onWhatIf }: DecisionRowPr
         >
           <Wand2 className="w-4 h-4" />
         </Button>
-        
+        */}
+
         <Button
           onClick={() => onViewDetails(decision)}
           size="sm"

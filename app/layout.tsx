@@ -3,8 +3,9 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Ads Decision Copilot',
-  description: 'Décisions Meta Ads intelligentes',
+  title: 'Ads Decision - Un cadre clair pour décider quoi faire de tes Ads',
+  description: 'Prenez des décisions data-driven pour vos campagnes Meta Ads. Automatisez vos règles marketing et optimisez votre ROI.',
+  keywords: ['Meta Ads', 'Facebook Ads', 'Marketing Automation', 'ROI', 'Decision Support'],
 }
 
 export default function RootLayout({

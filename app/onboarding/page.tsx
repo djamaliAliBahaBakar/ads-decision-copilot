@@ -6,15 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import OnboardingStep1 from '@/components/onboarding/step1-upload'
 import OnboardingStep2 from '@/components/onboarding/step2-tour'
-import OnboardingStep3 from '@/components/onboarding/step3-rules'
-import OnboardingStep4 from '@/components/onboarding/step4-decision'
+// MVP: Steps 3 et 4 désactivés pour simplifier
+// import OnboardingStep3 from '@/components/onboarding/step3-rules'
+// import OnboardingStep4 from '@/components/onboarding/step4-decision'
 
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [uploadedData, setUploadedData] = useState<any>(null)
   const router = useRouter()
 
-  const totalSteps = 4
+  const totalSteps = 2 // MVP: Simplifié à 2 étapes (upload + tour)
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -29,9 +30,19 @@ export default function OnboardingPage() {
   }
 
   const handleComplete = async () => {
-    // Marquer onboarding comme complété
-    await fetch('/api/onboarding/complete', { method: 'POST' })
-    router.push('/dashboard')
+    try {
+      // MVP: Créer les règles par défaut automatiquement
+      await fetch('/api/onboarding/create-default-rules', { method: 'POST' })
+
+      // Marquer onboarding comme complété
+      await fetch('/api/onboarding/complete', { method: 'POST' })
+
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error completing onboarding:', error)
+      // Continuer quand même
+      router.push('/dashboard')
+    }
   }
 
   return (
@@ -39,9 +50,9 @@ export default function OnboardingPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Configuration initiale</h1>
+          <h1 className="text-3xl font-bold mb-2">Bienvenue! 👋</h1>
           <p className="text-gray-600">
-            Configurons Ads Decision Copilot en 5 minutes
+            Configurons ton copilote en 2 minutes
           </p>
         </div>
 
@@ -75,9 +86,10 @@ export default function OnboardingPage() {
           )}
 
           {currentStep === 2 && (
-            <OnboardingStep2 onComplete={handleNext} />
+            <OnboardingStep2 onComplete={handleComplete} />
           )}
 
+          {/* MVP: Steps 3 et 4 désactivés
           {currentStep === 3 && (
             <OnboardingStep3
               uploadedData={uploadedData}
@@ -91,6 +103,7 @@ export default function OnboardingPage() {
               onComplete={handleComplete}
             />
           )}
+          */}
         </Card>
 
         {/* Navigation Buttons */}

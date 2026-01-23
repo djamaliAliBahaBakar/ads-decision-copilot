@@ -261,3 +261,134 @@ export async function disconnectMetaAccount() {
   revalidatePath('/dashboard/settings')
   return { success: true }
 }
+
+// Sync ads for a specific user (used by cron jobs - no auth context needed)
+export async function syncMetaAdsForUser(userId: string) {
+  const metaAccount = await prisma.metaAccount.findUnique({
+    where: { userId },
+  })
+
+  if (!metaAccount || !metaAccount.isActive) {
+    throw new Error('Meta account not connected or inactive')
+  }
+
+  try {
+    console.log(`[Meta Sync] Starting sync for user ${userId} (account: ${metaAccount.accountName})`)
+
+    // Update sync status
+    await prisma.metaAccount.update({
+      where: { id: metaAccount.id },
+      data: { syncStatus: 'syncing' },
+    })
+
+    // Fetch campaigns
+    const campaignsResponse = await fetch(
+      `https://graph.facebook.com/v18.0/${metaAccount.accountId}/campaigns?access_token=${metaAccount.accessToken}&fields=id,name,status`
+    )
+    const campaignsData = await campaignsResponse.json()
+
+    if (!campaignsData.data) {
+      throw new Error('Failed to fetch campaigns')
+    }
+
+    console.log(`[Meta Sync] Found ${campaignsData.data.length} campaigns`)
+
+    // Fetch ads with insights
+    const today = new Date()
+    let adsCount = 0
+
+    for (const campaign of campaignsData.data) {
+      const adsResponse = await fetch(
+        `https://graph.facebook.com/v18.0/${campaign.id}/ads?access_token=${metaAccount.accessToken}&fields=id,name,adset,campaign`
+      )
+      const adsData = await adsResponse.json()
+
+      for (const ad of adsData.data || []) {
+        // Fetch insights for this ad
+        const insightsResponse = await fetch(
+          `https://graph.facebook.com/v18.0/${ad.id}/insights?access_token=${metaAccount.accessToken}&fields=spend,impressions,clicks,actions,action_values&date_preset=last_7d`
+        )
+        const insightsData = await insightsResponse.json()
+
+        if (insightsData.data && insightsData.data.length > 0) {
+          const insight = insightsData.data[0]
+
+          // Calculate metrics
+          const spend = parseFloat(insight.spend || '0')
+          const clicks = parseInt(insight.clicks || '0')
+          const impressions = parseInt(insight.impressions || '0')
+          const conversions = insight.actions
+            ? insight.actions.reduce(
+                (sum: number, a: any) => sum + (a.action_type === 'lead' ? parseInt(a.value) : 0),
+                0
+              )
+            : 0
+
+          const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0
+          const cpl = conversions > 0 ? spend / conversions : 0
+
+          // Store in DB
+          await prisma.ad.upsert({
+            where: {
+              userId_metaAdId: {
+                userId,
+                metaAdId: ad.id,
+              },
+            },
+            create: {
+              userId,
+              adName: ad.name,
+              campaignName: campaign.name,
+              metaAdId: ad.id,
+              metaCampaignId: campaign.id,
+              angle: 'Meta Sync',
+              spend,
+              leads: conversions,
+              impressions,
+              clicks,
+              ctr: ctr / 100,
+              cpl,
+              roas: 0,
+              date: today,
+            },
+            update: {
+              spend,
+              leads: conversions,
+              impressions,
+              clicks,
+              ctr: ctr / 100,
+              cpl,
+              date: today,
+            },
+          })
+
+          adsCount++
+        }
+      }
+    }
+
+    console.log(`[Meta Sync] Successfully synced ${adsCount} ads for user ${userId}`)
+
+    // Update sync status
+    await prisma.metaAccount.update({
+      where: { id: metaAccount.id },
+      data: {
+        syncStatus: 'idle',
+        lastSyncAt: new Date(),
+        syncError: null,
+      },
+    })
+
+    return { success: true, adsCount }
+  } catch (error) {
+    console.error(`[Meta Sync] Error for user ${userId}:`, error)
+    await prisma.metaAccount.update({
+      where: { id: metaAccount.id },
+      data: {
+        syncStatus: 'error',
+        syncError: (error as Error).message,
+      },
+    })
+    throw error
+  }
+}

@@ -39,13 +39,19 @@ export async function POST(req: NextRequest) {
       data: adsToCreate,
     })
 
-    // Calculer quelques stats pour le retour
+    // Calculer les stats pour l'écran de vérification
+    const uniqueCampaigns = new Set(adsToCreate.map(a => a.campaignName).filter(Boolean))
+    const minDate = new Date(Math.min(...adsToCreate.map(a => a.date.getTime())))
+    const maxDate = new Date(Math.max(...adsToCreate.map(a => a.date.getTime())))
+
     const stats = {
       count: adsToCreate.length,
-      minDate: Math.min(...adsToCreate.map(a => a.date.getTime())),
-      maxDate: Math.max(...adsToCreate.map(a => a.date.getTime())),
-      avgCpl: adsToCreate.reduce((sum, a) => sum + a.cpl, 0) / adsToCreate.length,
+      campaignsCount: uniqueCampaigns.size,
+      minDate: minDate.toISOString().split('T')[0], // Format YYYY-MM-DD
+      maxDate: maxDate.toISOString().split('T')[0],
       totalSpend: adsToCreate.reduce((sum, a) => sum + a.spend, 0),
+      totalLeads: adsToCreate.reduce((sum, a) => sum + a.leads, 0),
+      avgCpl: adsToCreate.reduce((sum, a) => sum + a.cpl, 0) / adsToCreate.length,
     }
 
     return NextResponse.json(stats)

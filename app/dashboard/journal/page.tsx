@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getAllDecisions } from '@/app/actions/decisions'
 import { DecisionDetailsModal } from '@/components/decisions/decision-details-modal'
-import { WhatIfModal } from '@/components/whatif/whatif-modal'
+// import { WhatIfModal } from '@/components/whatif/whatif-modal' // MVP: Désactivé
 import { DecisionRow } from '@/components/journal/decision-row'
 import { TableSkeleton } from '@/components/ui/loading-skeleton'
 
@@ -31,12 +31,13 @@ export default function JournalPage() {
   const [filterAction, setFilterAction] = useState<string>('')
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null)
   const [showModal, setShowModal] = useState(false)
-  
-  const [whatIfDecision, setWhatIfDecision] = useState<{
-    id: string
-    adName: string
-    daysRunning: number
-  } | null>(null)
+
+  // MVP: What-if désactivé
+  // const [whatIfDecision, setWhatIfDecision] = useState<{
+  //   id: string
+  //   adName: string
+  //   daysRunning: number
+  // } | null>(null)
 
   useEffect(() => {
     fetchDecisions()
@@ -64,17 +65,15 @@ export default function JournalPage() {
     setShowModal(true)
   }
 
+  // MVP: What-if désactivé - fonction vide pour éviter erreur
   const handleWhatIf = (decision: Decision) => {
-    setWhatIfDecision({
-      id: decision.id,
-      adName: decision.adName,
-      daysRunning: 7,
-    })
+    // Désactivé pour MVP
+    console.log('What-if désactivé pour MVP', decision.id)
   }
 
   if (error) {
     return (
-      <div className="p-8">
+      <div className="space-y-4">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
           <p className="text-red-900 font-semibold">❌ {error}</p>
           <Button
@@ -91,7 +90,7 @@ export default function JournalPage() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-8 space-y-8">
+      <div className="space-y-8">
         <div>
           <div className="h-8 skeleton rounded w-96 mb-2"></div>
           <div className="h-4 skeleton rounded w-64"></div>
@@ -102,10 +101,12 @@ export default function JournalPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-8 fade-in">
+    <div className="space-y-8 fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">📋 Journal des Décisions</h1>
-        <p className="text-gray-600">Historique de toutes tes décisions</p>
+        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          Journal des Décisions
+        </h1>
+        <p className="text-gray-600">Historique complet de vos décisions marketing</p>
       </div>
 
       {/* Filtres */}
@@ -205,6 +206,7 @@ export default function JournalPage() {
         />
       )}
 
+      {/* MVP: What-if modal désactivé
       {whatIfDecision && (
         <WhatIfModal
           isOpen={!!whatIfDecision}
@@ -214,6 +216,7 @@ export default function JournalPage() {
           daysRunning={whatIfDecision.daysRunning}
         />
       )}
+      */}
     </div>
   )
 }
