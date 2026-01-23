@@ -2,17 +2,10 @@
 
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { getOrCreateUser } from '@/lib/get-or-create-user'
 
 export async function getUserRules() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
@@ -29,15 +22,7 @@ export async function createUserRule(data: {
   threshold: number
   days: number
 }) {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
@@ -55,15 +40,7 @@ export async function createUserRule(data: {
 }
 
 export async function deleteUserRule(ruleId: string) {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
@@ -77,15 +54,7 @@ export async function deleteUserRule(ruleId: string) {
 // === TILTMETER FUNCTIONS ===
 
 export async function calculateDisciplineScore() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')

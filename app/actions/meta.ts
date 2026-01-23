@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { getOrCreateUser } from '@/lib/get-or-create-user'
 
 const META_APP_ID = process.env.NEXT_PUBLIC_META_APP_ID
 const META_APP_SECRET = process.env.META_APP_SECRET
@@ -48,13 +49,7 @@ export async function getMetaAuthUrl() {
 
 // Step 2: Exchange code for token
 export async function handleMetaCallback(code: string, state: string) {
-  const { userId } = await auth()
-  if (!userId) throw new Error('Not authenticated')
-  if (state !== userId) throw new Error('State mismatch')
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
   if (!user) throw new Error('User not found')
 
   try {
@@ -120,12 +115,7 @@ export async function handleMetaCallback(code: string, state: string) {
 
 // Step 3: Sync ads from Meta
 export async function syncMetaAds() {
-  const { userId } = await auth()
-  if (!userId) throw new Error('Not authenticated')
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
   if (!user) throw new Error('User not found')
 
   const metaAccount = await prisma.metaAccount.findUnique({
@@ -251,12 +241,7 @@ export async function syncMetaAds() {
 
 // Get Meta account status
 export async function getMetaAccountStatus() {
-  const { userId } = await auth()
-  if (!userId) throw new Error('Not authenticated')
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
   if (!user) throw new Error('User not found')
 
   return await prisma.metaAccount.findUnique({
@@ -266,12 +251,7 @@ export async function getMetaAccountStatus() {
 
 // Disconnect Meta account
 export async function disconnectMetaAccount() {
-  const { userId } = await auth()
-  if (!userId) throw new Error('Not authenticated')
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
   if (!user) throw new Error('User not found')
 
   await prisma.metaAccount.delete({

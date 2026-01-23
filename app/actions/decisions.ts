@@ -2,18 +2,11 @@
 
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { getOrCreateUser } from '@/lib/get-or-create-user'
 
 // 👇 FONCTION 1
 export async function getDecisionSuggestions() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
@@ -156,15 +149,7 @@ export async function logDecision(data: {
   notes: string
   confidence: number
 }) {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+ const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
@@ -222,15 +207,7 @@ export async function logDecision(data: {
 
 // 👇 FONCTION 3
 export async function getDecisionsForAds() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
@@ -250,15 +227,7 @@ export async function getDecisionsForAds() {
 
 // 👇 FONCTION 4
 export async function getAllDecisions() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')

@@ -20,6 +20,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   metaAccount MetaAccount?
+  onboardingCompleted Boolean @default(false) 
 
   emailDigests EmailDigest[]
   

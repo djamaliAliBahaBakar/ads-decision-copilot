@@ -2,17 +2,10 @@
 
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import { getOrCreateUser } from '@/lib/get-or-create-user'
 
 export async function getPerformanceByAngle() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')

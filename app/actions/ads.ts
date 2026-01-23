@@ -3,18 +3,10 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { parseCSV } from '@/lib/csv-parser'
+import { getOrCreateUser } from '@/lib/get-or-create-user'
 
 export async function uploadAds(csvText: string) {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  // Get user from DB
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
@@ -54,16 +46,7 @@ export async function uploadAds(csvText: string) {
 }
 
 export async function getWeekData() {
-  const { userId } = await auth()
-
-  if (!userId) {
-    throw new Error('Not authenticated')
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
-
+  const user = await getOrCreateUser()
   if (!user) {
     throw new Error('User not found')
   }

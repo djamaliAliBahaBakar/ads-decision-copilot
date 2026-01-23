@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
+import { getOrCreateUser } from '@/lib/get-or-create-user'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -259,12 +260,7 @@ async function sendDigestEmail(user: any, digest: any, decisions: any[]) {
 
 // Get user's digest settings
 export async function getDigestSettings() {
-  const { userId } = await auth()
-  if (!userId) throw new Error('Not authenticated')
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
   if (!user) throw new Error('User not found')
 
   const digest = await prisma.emailDigest.findFirst({
@@ -280,12 +276,7 @@ export async function getDigestSettings() {
 
 // Toggle digest
 export async function toggleDigest(enabled: boolean) {
-  const { userId } = await auth()
-  if (!userId) throw new Error('Not authenticated')
-
-  const user = await prisma.user.findUnique({
-    where: { clerkId: userId },
-  })
+  const user = await getOrCreateUser()
   if (!user) throw new Error('User not found')
 
   const digest = await prisma.emailDigest.findFirst({
