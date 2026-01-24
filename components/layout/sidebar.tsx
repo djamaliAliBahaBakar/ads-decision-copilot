@@ -14,9 +14,10 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
+// Navigation items - French (i18n-ready)
 const navigation = [
   {
-    name: 'Dashboard',
+    name: 'Tableau de bord',
     href: '/dashboard',
     icon: LayoutDashboard,
     description: 'Vue d\'ensemble et suggestions',
@@ -28,7 +29,7 @@ const navigation = [
     description: 'Historique des décisions',
   },
   {
-    name: 'Upload CSV',
+    name: 'Import CSV',
     href: '/dashboard/upload',
     icon: Upload,
     description: 'Importer des données',
@@ -37,7 +38,7 @@ const navigation = [
     name: 'Paramètres',
     href: '/dashboard/settings',
     icon: Settings,
-    description: 'Meta Ads & Configuration',
+    description: 'Configuration du compte',
   },
 ]
 

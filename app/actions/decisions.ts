@@ -3,6 +3,7 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { getOrCreateUser } from '@/lib/get-or-create-user'
+import { requirePaidAccess } from '@/lib/access'
 
 // 👇 FONCTION 1
 export async function getDecisionSuggestions() {
@@ -141,7 +142,7 @@ function checkIfUserFollowedRule(decision: any, rule: any): boolean {
       return false
   }
 }
-// 👇 FONCTION 2 (CORRIGÉE)
+// 👇 FONCTION 2 (CORRIGÉE) - PROTECTED BY PAYWALL
 export async function logDecision(data: {
   adId: string
   action: string
@@ -149,7 +150,10 @@ export async function logDecision(data: {
   notes: string
   confidence: number
 }) {
- const user = await getOrCreateUser()
+  // ⚡ PAYWALL GUARD: Requires paid access
+  await requirePaidAccess()
+
+  const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')

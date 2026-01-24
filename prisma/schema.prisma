@@ -20,10 +20,11 @@ model User {
   updatedAt DateTime @updatedAt
 
   metaAccount MetaAccount?
-  onboardingCompleted Boolean @default(false) 
+  onboardingCompleted Boolean @default(false)
 
   emailDigests EmailDigest[]
-  
+  subscription Subscription?
+
   ads       Ad[]
   decisions Decision[]
   rules     UserRule[]
@@ -155,27 +156,79 @@ model EmailDigest {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   // Digest data
   weekStartDate DateTime
   weekEndDate   DateTime
-  
+
   disciplineScore Float
   economiesSaved  Float
   bestDecision    String?
   worstDecision   String?
   cplTrend        Float?
   topInsight      String?
-  
+
   // Email tracking
   sentAt    DateTime?
   openedAt  DateTime?
-  
+
   // Settings
   isEnabled Boolean @default(true)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@index([userId, weekStartDate])
+}
+
+// ============================================
+// SUBSCRIPTIONS & ACCESS
+// ============================================
+
+enum AccessLevel {
+  FREE_PREVIEW
+  PAID
+  SUPERUSER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  PAST_DUE
+  EXPIRED
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Access level
+  accessLevel AccessLevel @default(FREE_PREVIEW)
+
+  // Stripe data
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  stripePriceId        String?
+
+  // Subscription status
+  status         SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean @default(false)
+
+  // Billing
+  plan           String?  // "monthly" | "quarterly"
+  amount         Int?     // in cents (2900 = 29€)
+  currency       String   @default("eur")
+
+  // Trial / Early adopter
+  isEarlyAdopter Boolean @default(false)
+  earlyAdopterUntil DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([stripeCustomerId])
 }
