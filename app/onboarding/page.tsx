@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import OnboardingStep1 from '@/components/onboarding/step1-upload'
@@ -14,6 +15,7 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [uploadedData, setUploadedData] = useState<any>(null)
   const router = useRouter()
+  const { user } = useUser()
 
   const totalSteps = 2 // MVP: Simplifié à 2 étapes (upload + tour)
 
@@ -50,7 +52,7 @@ export default function OnboardingPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Bienvenue! 👋</h1>
+          <h1 className="text-3xl font-bold mb-2">Bienvenue{user?.firstName ? ` ${user.firstName}` : ''} ! 👋</h1>
           <p className="text-gray-600">
             Configurons ton Ads Decision en 2 minutes
           </p>

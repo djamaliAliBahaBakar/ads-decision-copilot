@@ -23,6 +23,7 @@ export interface ParseError {
 export interface ParseResult {
   data: AdRow[]
   errors: ParseError[]
+  warnings?: string[]  // Avertissements non-bloquants
   correctedCSV?: string
   // Nouvelles propriétés pour le parsing Meta
   detectedFormat?: 'meta_report' | 'meta_export' | 'adsdecision' | 'unknown'
@@ -43,6 +44,7 @@ export async function parseCSV(csvText: string): Promise<ParseResult> {
       return {
         data: metaResult.data,
         errors: [],
+        warnings: metaResult.warnings.length > 0 ? metaResult.warnings : undefined,
         detectedFormat: metaResult.detectedFormat,
         mappedColumns: metaResult.mappedColumns,
         mappingPreview: formatMappingPreview(metaResult)

@@ -239,12 +239,19 @@ export default function DashboardPage() {
         </div>
       </Card>
 
-      {/* CTA */}
-      <Link href="/dashboard/upload">
-        <Button variant="outline" className="w-full md:w-auto">
-          📤 Upload plus de données
-        </Button>
-      </Link>
+      {/* CTAs */}
+      <div className="flex flex-col md:flex-row gap-4">
+        <Link href="/dashboard/decisions">
+          <Button className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+            🎯 Prendre des décisions
+          </Button>
+        </Link>
+        <Link href="/dashboard/upload">
+          <Button variant="outline" className="w-full md:w-auto">
+            📤 Upload plus de données
+          </Button>
+        </Link>
+      </div>
     </div>
   )
 }

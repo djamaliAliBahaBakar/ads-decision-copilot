@@ -19,6 +19,7 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
   const [correctedCSV, setCorrectedCSV] = useState<string | null>(null)
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null)
   const [mappedColumns, setMappedColumns] = useState<Record<string, string> | null>(null)
+  const [warnings, setWarnings] = useState<string[]>([])
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -53,6 +54,7 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
     setCorrectedCSV(null)
     setDetectedFormat(null)
     setMappedColumns(null)
+    setWarnings([])
 
     try {
       // Lire le fichier
@@ -67,6 +69,9 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
       }
       if (result.mappedColumns) {
         setMappedColumns(result.mappedColumns)
+      }
+      if (result.warnings && result.warnings.length > 0) {
+        setWarnings(result.warnings)
       }
 
       // S'il y a des erreurs de parsing
@@ -193,7 +198,7 @@ ${rows.join('\n')}`
     <div>
       <h2 className="text-2xl font-bold mb-2">Import de vos données Ads</h2>
       <p className="text-gray-600 mb-4">
-        Importez vos données Meta Ads des 14 derniers jours minimum
+        Importez vos données Meta Ads (minimum 7 jours)
       </p>
 
       {/* Instructions Meta Ads Manager */}
@@ -202,7 +207,7 @@ ${rows.join('\n')}`
         <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
           <li>Aller dans Meta Ads Manager → sélectionner votre compte</li>
           <li><strong>Important :</strong> Se positionner au niveau <strong>"Publicités"</strong> (pas Campagnes, pas Ensembles)</li>
-          <li>Sélectionner les 14 derniers jours minimum</li>
+          <li>Sélectionner les <strong>7 derniers jours minimum</strong></li>
           <li>Cliquer sur "Exporter" → "Exporter les données du tableau"</li>
         </ol>
         <p className="text-xs text-blue-600 mt-2">
@@ -298,6 +303,21 @@ ${rows.join('\n')}`
                     <span className="text-blue-500">→</span>
                     <span className="text-blue-900 font-medium">{field}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Afficher les avertissements */}
+          {warnings.length > 0 && (
+            <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-lg">
+              <h4 className="font-semibold text-amber-900 mb-2 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                Avertissements
+              </h4>
+              <div className="space-y-1">
+                {warnings.map((warning, idx) => (
+                  <p key={idx} className="text-sm text-amber-800">{warning}</p>
                 ))}
               </div>
             </div>

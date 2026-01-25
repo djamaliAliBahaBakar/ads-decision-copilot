@@ -26,6 +26,30 @@ export interface MetaParseResult {
 }
 
 // Mapping des colonnes Meta vers notre format
+// Indicateurs de résultats qui correspondent à des leads
+const LEAD_RESULT_INDICATORS = [
+  'leads',
+  'lead',
+  'offsite_conversion',
+  'complete_registration',
+  'contact',
+  'submit_application',
+  'subscribe',
+  'conversion',
+]
+
+// Indicateurs de résultats qui NE SONT PAS des leads
+const NON_LEAD_INDICATORS = [
+  'link_click',
+  'landing_page_view',
+  'page_engagement',
+  'post_engagement',
+  'video_view',
+  'impression',
+  'reach',
+  'click',
+]
+
 const COLUMN_MAPPINGS: Record<string, string[]> = {
   ad_name: [
     'Nom de la publicité',
@@ -93,6 +117,12 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
   impressions: [
     'Impressions',
     'impressions',
+  ],
+  result_indicator: [
+    'Indicateur de résultats',
+    'Indicateur de rÃ©sultats',
+    'Result Indicator',
+    'Result Type',
   ],
   clicks: [
     'Clics',
@@ -304,6 +334,25 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
   for (const [field, index] of Object.entries(columnMapping)) {
     if (index !== undefined && headers[index]) {
       mappedColumns[field] = headers[index]
+    }
+  }
+
+  // Vérifier si les résultats sont des leads ou autre chose
+  let resultIndicatorWarningAdded = false
+  if (columnMapping.result_indicator !== undefined) {
+    const firstRow = rows[0]
+    if (firstRow) {
+      const values = Object.values(firstRow)
+      const indicator = values[columnMapping.result_indicator]?.toString().toLowerCase() || ''
+
+      const isLeadType = LEAD_RESULT_INDICATORS.some(li => indicator.includes(li))
+      const isNonLeadType = NON_LEAD_INDICATORS.some(nli => indicator.includes(nli))
+
+      if (isNonLeadType && !isLeadType) {
+        warnings.push(`⚠️ ATTENTION: Vos résultats sont des "${indicator}" (clics/vues), pas des leads.`)
+        warnings.push(`Pour un CPL précis, configurez Meta pour afficher les "Leads" ou "Conversions" comme résultat.`)
+        resultIndicatorWarningAdded = true
+      }
     }
   }
 
