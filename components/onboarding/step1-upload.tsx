@@ -192,9 +192,23 @@ ${rows.join('\n')}`
   return (
     <div>
       <h2 className="text-2xl font-bold mb-2">Import de vos données Ads</h2>
-      <p className="text-gray-600 mb-6">
+      <p className="text-gray-600 mb-4">
         Importez vos données Meta Ads des 14 derniers jours minimum
       </p>
+
+      {/* Instructions Meta Ads Manager */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="font-semibold text-blue-900 mb-2">📊 Comment exporter depuis Meta Ads Manager :</p>
+        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+          <li>Aller dans Meta Ads Manager → sélectionner votre compte</li>
+          <li><strong>Important :</strong> Se positionner au niveau <strong>"Publicités"</strong> (pas Campagnes, pas Ensembles)</li>
+          <li>Sélectionner les 14 derniers jours minimum</li>
+          <li>Cliquer sur "Exporter" → "Exporter les données du tableau"</li>
+        </ol>
+        <p className="text-xs text-blue-600 mt-2">
+          💡 Astuce : Ajoutez la colonne "Nom de la campagne" pour un meilleur suivi
+        </p>
+      </div>
 
       {/* Bouton télécharger template */}
       <div className="mb-6">
@@ -204,7 +218,7 @@ ${rows.join('\n')}`
           className="gap-2"
         >
           <Download className="w-4 h-4" />
-          Télécharger le template CSV
+          Télécharger le template CSV (optionnel)
         </Button>
       </div>
 

@@ -52,7 +52,7 @@ export default function OnboardingPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Bienvenue! 👋</h1>
           <p className="text-gray-600">
-            Configurons ton copilote en 2 minutes
+            Configurons ton Ads Decision en 2 minutes
           </p>
         </div>
 
