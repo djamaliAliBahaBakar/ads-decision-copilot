@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { /* Wand2, */ Info } from 'lucide-react' // MVP: Wand2 désactivé
+import { getActionLabel } from '@/lib/action-labels'
 
 interface Decision {
   id: string
@@ -22,14 +23,6 @@ interface DecisionRowProps {
   onWhatIf?: (decision: Decision) => void // MVP: Optional maintenant
 }
 
-const actionLabels: Record<string, { bg: string; text: string; emoji: string }> = {
-  KILL: { bg: 'bg-red-100', text: 'text-red-800', emoji: '🔴' },
-  SCALE: { bg: 'bg-green-100', text: 'text-green-800', emoji: '🟢' },
-  HOLD: { bg: 'bg-yellow-100', text: 'text-yellow-800', emoji: '🟡' },
-  TEST: { bg: 'bg-blue-100', text: 'text-blue-800', emoji: '🔵' },
-  FIX: { bg: 'bg-orange-100', text: 'text-orange-800', emoji: '🟠' },
-}
-
 const confidenceColors: Record<number, string> = {
   1: 'text-red-600',
   2: 'text-orange-600',
@@ -46,7 +39,7 @@ export function DecisionRow({ decision, onViewDetails, onWhatIf }: DecisionRowPr
     setFormattedDate(date.toLocaleDateString('fr-FR'))
   }, [decision.createdAt])
 
-  const actionStyle = actionLabels[decision.action] || actionLabels.HOLD
+  const actionStyle = getActionLabel(decision.action)
 
   return (
     <tr className="border-b hover:bg-gray-50 transition-colors fade-in">
@@ -62,7 +55,7 @@ export function DecisionRow({ decision, onViewDetails, onWhatIf }: DecisionRowPr
       <td className="p-2 text-center">
         <span
           className={`px-2 py-1 rounded text-xs font-semibold ${actionStyle.bg} ${actionStyle.text}`}
-          title={decision.action}
+          title={`${decision.action} - ${actionStyle.description}`}
         >
           {actionStyle.emoji}
         </span>

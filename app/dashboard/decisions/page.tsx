@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getDecisionSuggestions, logDecision, getDecisionsForAds } from '@/app/actions/decisions'
 import { DecisionModal } from '@/components/decisions/decision-modal'
+import { getActionLabel } from '@/lib/action-labels'
 
 interface Suggestion {
   id: string
@@ -145,14 +146,17 @@ export default function DecisionsPage() {
                     </td>
                     <td className="p-2 text-right">{ad.daysRunning}d</td>
                     <td className="p-2 text-center">
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
-                        ad.action === 'KILL' ? 'bg-red-100 text-red-800' :
-                        ad.action === 'SCALE' ? 'bg-green-100 text-green-800' :
-                        ad.action === 'HOLD' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {ad.action}
-                      </span>
+                      {(() => {
+                        const actionLabel = getActionLabel(ad.action)
+                        return (
+                          <span
+                            className={`px-2 py-1 rounded text-xs font-semibold ${actionLabel.bg} ${actionLabel.text}`}
+                            title={actionLabel.tooltip}
+                          >
+                            {actionLabel.emoji} {ad.action}
+                          </span>
+                        )
+                      })()}
                     </td>
                     <td className="p-2 text-center">
                       <span className={`text-xs font-semibold ${

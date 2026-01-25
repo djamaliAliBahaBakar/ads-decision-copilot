@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Loader2, AlertCircle, TrendingDown } from 'lucide-react'
+import { getActionLabel } from '@/lib/action-labels'
 
 interface Step4Props {
   uploadedData: any
@@ -127,10 +128,10 @@ export default function OnboardingStep4({ uploadedData, onComplete }: Step4Props
           <p className="text-sm font-medium mb-2">📋 Action recommandée :</p>
           <div className="flex items-center gap-2 mb-3">
             <span className="px-3 py-1 bg-red-600 text-white font-bold rounded">
-              KILL
+              {getActionLabel('KILL').emoji} KILL
             </span>
             <span className="text-sm text-gray-600">
-              Arrêter cette campagne
+              {getActionLabel('KILL').description}
             </span>
           </div>
 

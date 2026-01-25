@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { X } from 'lucide-react'
+import { ACTION_OPTIONS, getActionLabel } from '@/lib/action-labels'
 
 interface DecisionModalProps {
   ad: any
@@ -46,11 +47,14 @@ export function DecisionModal({ ad, onSave, onClose }: DecisionModalProps) {
               onChange={e => setAction(e.target.value)}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="KILL">🔴 KILL</option>
-              <option value="SCALE">🟢 SCALE</option>
-              <option value="HOLD">🟡 HOLD</option>
-              <option value="TEST">🔵 TEST</option>
-              <option value="FIX">🟠 FIX</option>
+              {ACTION_OPTIONS.map(opt => {
+                const label = getActionLabel(opt.value)
+                return (
+                  <option key={opt.value} value={opt.value}>
+                    {label.emoji} {opt.value} - {opt.description}
+                  </option>
+                )
+              })}
             </select>
           </div>
 
