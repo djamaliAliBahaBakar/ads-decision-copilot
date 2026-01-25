@@ -6,12 +6,13 @@ import { /* Wand2, */ Info } from 'lucide-react' // MVP: Wand2 désactivé
 
 interface Decision {
   id: string
+  adId: string
   adName: string
-  angle: string
+  angle: string | null
   action: string
   reason: string
   cplAtDecision: number
-  confidence: number
+  confidence: number | null
   createdAt: Date
 }
 
@@ -72,10 +73,10 @@ export function DecisionRow({ decision, onViewDetails, onWhatIf }: DecisionRowPr
       <td className="p-2 text-right text-sm">€{decision.cplAtDecision.toFixed(2)}</td>
       <td className="p-2 text-right">
         <span
-          className={`text-xs font-bold ${confidenceColors[decision.confidence] || confidenceColors[3]}`}
-          title={`Confiance: ${decision.confidence}/5`}
+          className={`text-xs font-bold ${confidenceColors[decision.confidence ?? 3] || confidenceColors[3]}`}
+          title={`Confiance: ${decision.confidence ?? '-'}/5`}
         >
-          {decision.confidence}⭐
+          {decision.confidence ?? '-'}⭐
         </span>
       </td>
       <td className="p-2 text-center space-x-1 flex justify-center">

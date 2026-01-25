@@ -11,7 +11,7 @@ export async function generateWeeklyDigest(userId: string) {
   try {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { emailDigest: { where: { sentAt: null } } },
+      include: { emailDigests: { where: { sentAt: null } } },
     })
 
     if (!user || !user.email) {

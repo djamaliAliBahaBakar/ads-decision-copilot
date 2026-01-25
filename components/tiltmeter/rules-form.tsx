@@ -2,23 +2,19 @@
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form'
-import { createRule } from '@/app/actions/rules'
+import { createUserRule } from '@/app/actions/rules'
 import { toast } from 'sonner'
 
-const ruleSchema = z.object({
-  ruleType: z.enum(['kill_if_cpl_high', 'scale_if_roas_good', 'hold_if_learning']),
-  threshold: z.string().transform(Number),
-  days: z.string().transform(Number),
-  description: z.string().min(5),
-})
-
-type RuleInput = z.infer<typeof ruleSchema>
+interface RuleInput {
+  ruleType: 'kill_if_cpl_high' | 'scale_if_roas_good' | 'hold_if_learning'
+  threshold: number
+  days: number
+  description: string
+}
 
 const ruleTemplates = {
   kill_if_cpl_high: {
@@ -39,7 +35,6 @@ export function RulesForm() {
   const [loading, setLoading] = useState(false)
 
   const form = useForm<RuleInput>({
-    resolver: zodResolver(ruleSchema),
     defaultValues: {
       ruleType: 'kill_if_cpl_high',
       threshold: 10,
@@ -51,16 +46,15 @@ export function RulesForm() {
   async function onSubmit(data: RuleInput) {
     setLoading(true)
     try {
-      await createRule({
+      await createUserRule({
         ruleType: data.ruleType,
-        threshold: data.threshold,
-        days: data.days,
-        description: data.description,
+        threshold: Number(data.threshold),
+        days: Number(data.days),
       })
       toast.success('Règle créée ✓')
       form.reset()
     } catch (error) {
-      toast.error('Erreur: ' + (error as any).message)
+      toast.error('Erreur: ' + (error as Error).message)
     } finally {
       setLoading(false)
     }
@@ -102,6 +96,7 @@ export function RulesForm() {
                   type="number"
                   placeholder={ruleTemplates[form.watch('ruleType')].placeholder}
                   {...field}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
                 />
               </FormControl>
             </FormItem>
@@ -115,7 +110,12 @@ export function RulesForm() {
             <FormItem>
               <FormLabel>Nombre de jours</FormLabel>
               <FormControl>
-                <Input type="number" placeholder="Ex: 3" {...field} />
+                <Input
+                  type="number"
+                  placeholder="Ex: 3"
+                  {...field}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                />
               </FormControl>
             </FormItem>
           )}

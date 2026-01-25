@@ -13,15 +13,17 @@ interface Decision {
   id: string
   adId: string
   adName: string
-  angle: string
+  angle: string | null
   action: string
   reason: string
   cplAtDecision: number
-  confidence: number
+  confidence: number | null
   createdAt: Date
-  actualSavings?: number
-  wasCorrect?: boolean
-  postMortemNotes?: string
+  actualSavings?: number | null
+  wasCorrect?: boolean | null
+  postMortemNotes?: string | null
+  followedRule?: boolean | null
+  appliedRuleId?: string | null
 }
 
 export default function JournalPage() {
@@ -192,7 +194,7 @@ export default function JournalPage() {
           <p className="text-xs text-gray-600 mb-1">Conf. avg</p>
           <p className="text-2xl font-bold">
             {(decisions.length > 0
-              ? (decisions.reduce((sum, d) => sum + d.confidence, 0) / decisions.length).toFixed(1)
+              ? (decisions.reduce((sum, d) => sum + (d.confidence ?? 0), 0) / decisions.length).toFixed(1)
               : 0)}/5
           </p>
         </Card>

@@ -5,55 +5,73 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { uploadAds } from '@/app/actions/ads'
 import { useRouter } from 'next/navigation'
-import { Upload, FileText, CheckCircle2 } from 'lucide-react'
+import { Upload, FileText, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
+import { parseCSV } from '@/lib/csv-parser'
 
 export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<any[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [detectedFormat, setDetectedFormat] = useState<string | null>(null)
+  const [mappedColumns, setMappedColumns] = useState<Record<string, string> | null>(null)
   const router = useRouter()
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (!selectedFile) return
 
     setFile(selectedFile)
+    setError(null)
+    setDetectedFormat(null)
+    setMappedColumns(null)
 
-    // Parse pour preview
-    const reader = new FileReader()
-    reader.onload = async (event) => {
-      const text = event.target?.result as string
-      const lines = text.split('\n')
-      const headers = lines[0].split(',').map(h => h.trim())
-      
-      // Preview 5 lignes
-      const previewData = lines.slice(1, 6).map(line => {
-        const values = line.split(',').map(v => v.trim())
-        return headers.reduce((obj, header, idx) => ({
-          ...obj,
-          [header]: values[idx]
-        }), {})
-      })
-      
+    try {
+      const text = await selectedFile.text()
+
+      // Utiliser le parser intelligent avec support Meta
+      const result = await parseCSV(text)
+
+      if (result.errors.length > 0 && result.data.length === 0) {
+        setError(`Erreur de parsing: ${result.errors[0].message}`)
+        setPreview([])
+        return
+      }
+
+      // Stocker le format détecté
+      if (result.detectedFormat) {
+        setDetectedFormat(result.detectedFormat)
+      }
+      if (result.mappedColumns) {
+        setMappedColumns(result.mappedColumns)
+      }
+
+      // Preview 5 premières lignes des données parsées
+      const previewData = result.data.slice(0, 5)
       setPreview(previewData)
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du parsing')
+      setPreview([])
     }
-    reader.readAsText(selectedFile)
   }
 
   const handleUpload = async () => {
     if (!file) return
 
     setLoading(true)
+    setError(null)
     try {
       const text = await file.text()
       await uploadAds(text)
       setFile(null)
       setPreview([])
+      setDetectedFormat(null)
+      setMappedColumns(null)
       router.push('/dashboard')
       router.refresh()
-    } catch (error) {
-      console.error('Upload error:', error)
-      alert('Erreur lors de l\'upload')
+    } catch (err: any) {
+      console.error('Upload error:', err)
+      setError(err.message || 'Erreur lors de l\'upload')
     } finally {
       setLoading(false)
     }
@@ -71,7 +89,7 @@ export default function UploadPage() {
       <Card className="p-6">
         <div className={`
           border-2 border-dashed rounded-lg p-12 text-center transition-all
-          ${file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/30'}
+          ${file && !error ? 'border-green-400 bg-green-50' : error ? 'border-red-400 bg-red-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/30'}
         `}>
           <input
             type="file"
@@ -81,7 +99,22 @@ export default function UploadPage() {
             id="csv-input"
           />
           <label htmlFor="csv-input" className="cursor-pointer">
-            {file ? (
+            {error ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                  <AlertCircle className="w-8 h-8 text-red-600" />
+                </div>
+                <div className="text-lg font-semibold text-red-900">
+                  Erreur de format
+                </div>
+                <p className="text-sm text-red-700 max-w-md">
+                  {error}
+                </p>
+                <p className="text-xs text-red-600 mt-2">
+                  Cliquez pour sélectionner un autre fichier
+                </p>
+              </div>
+            ) : file ? (
               <div className="flex flex-col items-center gap-3">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
                   <CheckCircle2 className="w-8 h-8 text-green-600" />
@@ -90,7 +123,9 @@ export default function UploadPage() {
                   {file.name}
                 </div>
                 <p className="text-sm text-green-700">
-                  Fichier prêt à être importé
+                  {detectedFormat && detectedFormat !== 'adsdecision'
+                    ? `Export ${detectedFormat === 'meta_report' ? 'Meta Ads Manager' : 'Meta'} détecté ✓`
+                    : 'Fichier prêt à être importé'}
                 </p>
               </div>
             ) : (
@@ -104,17 +139,37 @@ export default function UploadPage() {
                 <p className="text-sm text-gray-500">
                   ou cliquez pour sélectionner un fichier
                 </p>
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xs text-gray-600 font-medium mb-1">Format attendu:</p>
-                  <p className="text-xs text-gray-500 font-mono">
-                    ad_name, campaign_name, angle, cpl, spend, leads, date
-                  </p>
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg text-left">
+                  <p className="text-xs text-gray-600 font-medium mb-2">Formats supportés :</p>
+                  <ul className="text-xs text-gray-500 space-y-1">
+                    <li>• Export Meta Ads Manager (français ou anglais)</li>
+                    <li>• Format Ads Decision (ad_name, cpl, spend, leads, date)</li>
+                  </ul>
                 </div>
               </div>
             )}
           </label>
         </div>
       </Card>
+
+      {/* Mapping détecté pour les exports Meta */}
+      {mappedColumns && Object.keys(mappedColumns).length > 0 && detectedFormat !== 'adsdecision' && !error && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+            <ArrowRight className="w-4 h-4" />
+            Colonnes mappées automatiquement
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+            {Object.entries(mappedColumns).map(([field, column]) => (
+              <div key={field} className="flex items-center gap-2 bg-white p-2 rounded">
+                <span className="text-blue-700 font-mono text-xs truncate max-w-24">{column}</span>
+                <span className="text-blue-500">→</span>
+                <span className="text-blue-900 font-medium">{field}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       {preview.length > 0 && (
         <Card className="p-6">

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { parseCSV, ParseError } from '@/lib/csv-parser'
-import { Upload, FileText, Download, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Upload, FileText, Download, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
 
 interface Step1Props {
   onComplete: (data: any) => void
@@ -17,6 +17,8 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
   const [uploadStats, setUploadStats] = useState<any>(null)
   const [parseErrors, setParseErrors] = useState<ParseError[]>([])
   const [correctedCSV, setCorrectedCSV] = useState<string | null>(null)
+  const [detectedFormat, setDetectedFormat] = useState<string | null>(null)
+  const [mappedColumns, setMappedColumns] = useState<Record<string, string> | null>(null)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -49,13 +51,23 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
     setError(null)
     setParseErrors([])
     setCorrectedCSV(null)
+    setDetectedFormat(null)
+    setMappedColumns(null)
 
     try {
       // Lire le fichier
       const text = await file.text()
 
-      // Parser avec csv-parser.ts amélioré
+      // Parser avec csv-parser.ts amélioré (supporte Meta)
       const result = await parseCSV(text)
+
+      // Stocker le format détecté et les colonnes mappées
+      if (result.detectedFormat) {
+        setDetectedFormat(result.detectedFormat)
+      }
+      if (result.mappedColumns) {
+        setMappedColumns(result.mappedColumns)
+      }
 
       // S'il y a des erreurs de parsing
       if (result.errors.length > 0) {
@@ -250,9 +262,32 @@ ${rows.join('\n')}`
             <CheckCircle2 className="w-8 h-8 text-green-600" />
             <div>
               <h3 className="text-xl font-bold text-green-900">Import réussi!</h3>
-              <p className="text-sm text-green-700">Vérifiez les données ci-dessous</p>
+              <p className="text-sm text-green-700">
+                {detectedFormat && detectedFormat !== 'adsdecision'
+                  ? `Export ${detectedFormat === 'meta_report' ? 'Meta Ads Manager' : 'Meta'} détecté et converti automatiquement`
+                  : 'Vérifiez les données ci-dessous'}
+              </p>
             </div>
           </div>
+
+          {/* Afficher le mapping détecté si c'est un export Meta */}
+          {mappedColumns && Object.keys(mappedColumns).length > 0 && detectedFormat !== 'adsdecision' && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                <ArrowRight className="w-4 h-4" />
+                Colonnes mappées automatiquement
+              </h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {Object.entries(mappedColumns).map(([field, column]) => (
+                  <div key={field} className="flex items-center gap-2">
+                    <span className="text-blue-700 font-mono">{column}</span>
+                    <span className="text-blue-500">→</span>
+                    <span className="text-blue-900 font-medium">{field}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Stats en grille */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

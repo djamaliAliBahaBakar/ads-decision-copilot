@@ -20,8 +20,8 @@ import {
 interface Ad {
   id: string
   adName: string
-  campaignName: string
-  angle: string
+  campaignName: string | null
+  angle: string | null
   cpl: number
   spend: number
   leads: number

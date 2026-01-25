@@ -21,7 +21,7 @@ export function DigestSettings() {
     try {
       const settings = await getDigestSettings()
       setIsEnabled(settings.isEnabled)
-      setLastDigest(settings.lastDigest)
+      setLastDigest(settings.lastDigest ?? null)
     } catch (error) {
       console.error('Error:', error)
     } finally {

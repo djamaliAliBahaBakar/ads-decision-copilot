@@ -21,22 +21,23 @@ const user = await getOrCreateUser()
   }
 
   // Group by angle
-  const groupedByAngle = new Map()
+  type AdType = typeof ads[number]
+  const groupedByAngle = new Map<string, AdType[]>()
 
   ads.forEach(ad => {
     const angle = ad.angle || 'Unknown'
     if (!groupedByAngle.has(angle)) {
       groupedByAngle.set(angle, [])
     }
-    groupedByAngle.get(angle).push(ad)
+    groupedByAngle.get(angle)!.push(ad)
   })
 
   // Calculate stats per angle
   const angleStats = Array.from(groupedByAngle.entries()).map(([angle, angleAds]) => {
-    const totalSpend = angleAds.reduce((sum, ad) => sum + ad.spend, 0)
-    const totalLeads = angleAds.reduce((sum, ad) => sum + ad.leads, 0)
+    const totalSpend = angleAds.reduce((sum: number, ad) => sum + ad.spend, 0)
+    const totalLeads = angleAds.reduce((sum: number, ad) => sum + ad.leads, 0)
     const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0
-    const avgRoas = angleAds.reduce((sum, ad) => sum + (ad.roas || 0), 0) / angleAds.length
+    const avgRoas = angleAds.reduce((sum: number, ad) => sum + (ad.roas || 0), 0) / angleAds.length
     const bestCpl = Math.min(...angleAds.map(ad => ad.cpl))
     const worstCpl = Math.max(...angleAds.map(ad => ad.cpl))
 
@@ -56,7 +57,8 @@ const user = await getOrCreateUser()
   angleStats.sort((a, b) => a.avgCpl - b.avgCpl)
 
   // Generate insights
-  const insights: Array<{ type: string; text: string }> = []
+  type InsightType = 'best' | 'worst' | 'comparison' | 'recommendation'
+  const insights: Array<{ type: InsightType; text: string }> = []
 
   if (angleStats.length >= 2) {
     const best = angleStats[0]

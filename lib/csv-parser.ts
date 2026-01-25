@@ -1,4 +1,5 @@
 import Papa from 'papaparse'
+import { parseMetaCSV, formatMappingPreview } from './meta-csv-parser'
 
 export interface AdRow {
   ad_name: string
@@ -23,13 +24,73 @@ export interface ParseResult {
   data: AdRow[]
   errors: ParseError[]
   correctedCSV?: string
+  // Nouvelles propriétés pour le parsing Meta
+  detectedFormat?: 'meta_report' | 'meta_export' | 'adsdecision' | 'unknown'
+  mappedColumns?: Record<string, string>
+  mappingPreview?: string
 }
 
-export function parseCSV(csvText: string): Promise<ParseResult> {
+/**
+ * Parse un fichier CSV avec détection automatique du format Meta
+ */
+export async function parseCSV(csvText: string): Promise<ParseResult> {
+  // Essayer d'abord le parser Meta intelligent
+  try {
+    const metaResult = await parseMetaCSV(csvText)
+
+    // Si le parser Meta a trouvé des données valides
+    if (metaResult.data.length > 0 && metaResult.errors.length === 0) {
+      return {
+        data: metaResult.data,
+        errors: [],
+        detectedFormat: metaResult.detectedFormat,
+        mappedColumns: metaResult.mappedColumns,
+        mappingPreview: formatMappingPreview(metaResult)
+      }
+    }
+
+    // Si le parser Meta a trouvé des données mais avec des erreurs
+    if (metaResult.data.length > 0) {
+      // Convertir les warnings/errors Meta en ParseError
+      const errors: ParseError[] = metaResult.warnings.map((warning, idx) => {
+        const lineMatch = warning.match(/Ligne (\d+)/)
+        return {
+          line: lineMatch ? parseInt(lineMatch[1]) : idx + 2,
+          field: 'parsing',
+          value: null,
+          message: warning
+        }
+      })
+
+      return {
+        data: metaResult.data,
+        errors,
+        detectedFormat: metaResult.detectedFormat,
+        mappedColumns: metaResult.mappedColumns,
+        mappingPreview: formatMappingPreview(metaResult)
+      }
+    }
+
+    // Si le format n'est pas reconnu comme Meta, utiliser le parser strict
+    if (metaResult.detectedFormat === 'unknown' || metaResult.errors.length > 0) {
+      // Le parser Meta n'a pas réussi, essayer le parser original
+      return parseCSVStrict(csvText)
+    }
+  } catch {
+    // Si le parser Meta échoue, utiliser le parser original
+  }
+
+  return parseCSVStrict(csvText)
+}
+
+/**
+ * Parser CSV strict (format AdsDecision original)
+ */
+function parseCSVStrict(csvText: string): Promise<ParseResult> {
   return new Promise((resolve, reject) => {
     Papa.parse(csvText, {
       header: true,
-      dynamicTyping: false, // Désactiver pour mieux détecter les erreurs
+      dynamicTyping: false,
       skipEmptyLines: true,
       complete: (results) => {
         const data = results.data as any[]
@@ -45,7 +106,8 @@ export function parseCSV(csvText: string): Promise<ParseResult> {
           reject(new Error(
             `❌ Colonnes manquantes : ${missingColumns.join(', ')}\n\n` +
             `Colonnes trouvées : ${headers.join(', ')}\n\n` +
-            `💡 Astuce : Téléchargez à nouveau le template pour avoir le bon format.`
+            `💡 Ce fichier semble être un export Meta Ads Manager.\n` +
+            `Le système va essayer de le convertir automatiquement...`
           ))
           return
         }

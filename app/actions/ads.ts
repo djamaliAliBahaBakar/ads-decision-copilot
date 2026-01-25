@@ -1,6 +1,5 @@
 'use server'
 
-import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { parseCSV } from '@/lib/csv-parser'
 import { getOrCreateUser } from '@/lib/get-or-create-user'
@@ -12,16 +11,19 @@ export async function uploadAds(csvText: string) {
     throw new Error('User not found')
   }
 
-  // Parse CSV
-  const rows = await parseCSV(csvText)
+  // Parse CSV avec support Meta automatique
+  const result = await parseCSV(csvText)
 
-  if (rows.length === 0) {
-    throw new Error('No valid rows in CSV')
+  if (result.data.length === 0) {
+    const errorMsg = result.errors.length > 0
+      ? result.errors.map(e => e.message).join(', ')
+      : 'No valid rows in CSV'
+    throw new Error(errorMsg)
   }
 
   // Insert all ads
   const ads = await Promise.all(
-    rows.map(row =>
+    result.data.map(row =>
       prisma.ad.create({
         data: {
           userId: user.id,

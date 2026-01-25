@@ -10,7 +10,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -122,7 +121,7 @@ export default function PerformancePage() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="angle" />
             <YAxis />
-            <Tooltip formatter={(value) => `€${parseFloat(value).toFixed(2)}`} />
+            <Tooltip formatter={(value) => `€${parseFloat(String(value)).toFixed(2)}`} />
             <Bar dataKey="avgCpl" fill="#3b82f6" name="CPL moyen" />
           </BarChart>
         </ResponsiveContainer>
@@ -136,7 +135,7 @@ export default function PerformancePage() {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="angle" />
             <YAxis />
-            <Tooltip formatter={(value) => `${parseFloat(value).toFixed(2)}x`} />
+            <Tooltip formatter={(value) => `${parseFloat(String(value)).toFixed(2)}x`} />
             <Bar dataKey="avgRoas" fill="#10b981" name="ROAS moyen" />
           </BarChart>
         </ResponsiveContainer>

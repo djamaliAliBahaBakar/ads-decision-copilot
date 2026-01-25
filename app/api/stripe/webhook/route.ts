@@ -4,7 +4,7 @@ import Stripe from 'stripe'
 import { upgradeUserToPaid, downgradeUser } from '@/lib/access'
 
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-12-18.acacia' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-12-15.clover' })
   : null
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
@@ -51,13 +51,18 @@ export async function POST(request: NextRequest) {
         const plan = session.metadata?.plan as 'monthly' | 'quarterly' || 'monthly'
         const amount = plan === 'monthly' ? 2900 : 7900
 
+        // Get period end from subscription (handle different Stripe API versions)
+        const periodEnd = (subscription as any).current_period_end
+          ? new Date((subscription as any).current_period_end * 1000)
+          : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // fallback: 30 days
+
         await upgradeUserToPaid(userId, {
           customerId: session.customer as string,
           subscriptionId: subscription.id,
           priceId: subscription.items.data[0].price.id,
           plan,
           amount,
-          periodEnd: new Date(subscription.current_period_end * 1000),
+          periodEnd,
         })
 
         console.log(`User ${userId} upgraded to PAID`)
@@ -72,6 +77,11 @@ export async function POST(request: NextRequest) {
 
         // Check if subscription is active
         if (subscription.status === 'active') {
+          // Get period end (handle different Stripe API versions)
+          const periodEnd = (subscription as any).current_period_end
+            ? new Date((subscription as any).current_period_end * 1000)
+            : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+
           // Update period end
           await upgradeUserToPaid(userId, {
             customerId: subscription.customer as string,
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
             priceId: subscription.items.data[0].price.id,
             plan: subscription.metadata?.plan as 'monthly' | 'quarterly' || 'monthly',
             amount: subscription.items.data[0].price.unit_amount || 2900,
-            periodEnd: new Date(subscription.current_period_end * 1000),
+            periodEnd,
           })
         }
         break

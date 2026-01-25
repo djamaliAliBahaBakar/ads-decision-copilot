@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getUserRules, deleteRule } from '@/app/actions/rules'
+import { getUserRules, deleteUserRule } from '@/app/actions/rules'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
@@ -26,7 +26,7 @@ export function RulesList() {
 
   async function handleDelete(ruleId: string) {
     try {
-      await deleteRule(ruleId)
+      await deleteUserRule(ruleId)
       setRules(rules.filter(r => r.id !== ruleId))
       toast.success('Règle supprimée ✓')
     } catch (error) {

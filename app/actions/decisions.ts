@@ -57,8 +57,8 @@ export async function getDecisionSuggestions() {
 
     const cplTrend3d = ((last3Cpl - prev3Cpl) / prev3Cpl) * 100
 
-    let action = 'REVIEW'
-    let confidence = 'LOW'
+    let action: 'KILL' | 'SCALE' | 'HOLD' | 'REVIEW' = 'REVIEW'
+    let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW'
     let reason = 'No rule matched'
 
     rules.forEach(rule => {
