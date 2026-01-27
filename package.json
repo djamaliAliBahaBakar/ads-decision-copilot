@@ -17,7 +17,8 @@
     "test:coverage": "jest --coverage",
     "pretest:e2e": "playwright install",
     "pre-deploy": "bash scripts/pre-deploy-check.sh",
-    "validate": "npm run pre-deploy"
+    "validate": "npm run pre-deploy",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
