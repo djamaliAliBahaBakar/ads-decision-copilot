@@ -3,7 +3,10 @@
 import { auth } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import { getOrCreateUser } from '@/lib/get-or-create-user'
-import { requirePaidAccess } from '@/lib/access'
+import { getAccess } from '@/lib/access'
+
+// Nombre de décisions gratuites pour les utilisateurs FREE
+const FREE_DECISIONS_LIMIT = 3
 
 // 👇 FONCTION 1
 export async function getDecisionSuggestions() {
@@ -142,7 +145,7 @@ function checkIfUserFollowedRule(decision: any, rule: any): boolean {
       return false
   }
 }
-// 👇 FONCTION 2 (CORRIGÉE) - PROTECTED BY PAYWALL
+// 👇 FONCTION 2 - FREEMIUM: 3 décisions gratuites
 export async function logDecision(data: {
   adId: string
   action: string
@@ -150,13 +153,27 @@ export async function logDecision(data: {
   notes: string
   confidence: number
 }) {
-  // ⚡ PAYWALL GUARD: Requires paid access
-  await requirePaidAccess()
-
   const user = await getOrCreateUser()
 
   if (!user) {
     throw new Error('User not found')
+  }
+
+  // ⚡ FREEMIUM CHECK: 3 décisions gratuites, puis paywall
+  const access = await getAccess()
+
+  if (!access?.isPaid) {
+    // Compter les décisions existantes de l'utilisateur
+    const existingDecisionsCount = await prisma.decision.count({
+      where: { userId: user.id },
+    })
+
+    if (existingDecisionsCount >= FREE_DECISIONS_LIMIT) {
+      throw new Error(
+        `Vous avez atteint la limite de ${FREE_DECISIONS_LIMIT} décisions gratuites. ` +
+        `Passez à la version payante pour des décisions illimitées.`
+      )
+    }
   }
 
   const ad = await prisma.ad.findUnique({
@@ -230,6 +247,39 @@ export async function getDecisionsForAds() {
 }
 
 // 👇 FONCTION 4
+// 👇 FONCTION 4 - Get user's decision quota
+export async function getDecisionQuota() {
+  const user = await getOrCreateUser()
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  const access = await getAccess()
+  const isPaid = access?.isPaid ?? false
+
+  if (isPaid) {
+    return {
+      isPaid: true,
+      used: 0,
+      limit: Infinity,
+      remaining: Infinity,
+    }
+  }
+
+  const usedCount = await prisma.decision.count({
+    where: { userId: user.id },
+  })
+
+  return {
+    isPaid: false,
+    used: usedCount,
+    limit: FREE_DECISIONS_LIMIT,
+    remaining: Math.max(0, FREE_DECISIONS_LIMIT - usedCount),
+  }
+}
+
+// 👇 FONCTION 5
 export async function getAllDecisions() {
   const user = await getOrCreateUser()
 

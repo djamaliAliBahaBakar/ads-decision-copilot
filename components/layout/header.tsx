@@ -1,7 +1,7 @@
 'use client'
 
-import { UserButton } from '@clerk/nextjs'
-import { Bell, Search } from 'lucide-react'
+import { UserButton, SignOutButton } from '@clerk/nextjs'
+import { Bell, Search, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function Header() {
@@ -41,6 +41,14 @@ export function Header() {
                   },
                 }}
               />
+
+              {/* Bouton de déconnexion visible */}
+              <SignOutButton redirectUrl="/sign-in">
+                <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">Déconnexion</span>
+                </Button>
+              </SignOutButton>
             </div>
           </div>
         </div>

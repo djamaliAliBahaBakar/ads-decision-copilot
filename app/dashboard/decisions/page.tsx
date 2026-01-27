@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getDecisionSuggestions, logDecision, getDecisionsForAds } from '@/app/actions/decisions'
+import { getDecisionSuggestions, logDecision, getDecisionsForAds, getDecisionQuota } from '@/app/actions/decisions'
 import { DecisionModal } from '@/components/decisions/decision-modal'
 import { getActionLabel } from '@/lib/action-labels'
+import { usePaywall } from '@/components/paywall'
 
 interface Suggestion {
   id: string
@@ -29,12 +30,21 @@ interface DecisionRecord {
   createdAt: Date
 }
 
+interface DecisionQuota {
+  isPaid: boolean
+  used: number
+  limit: number
+  remaining: number
+}
+
 export default function DecisionsPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [decisions, setDecisions] = useState<DecisionRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedAd, setSelectedAd] = useState<Suggestion | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [quota, setQuota] = useState<DecisionQuota | null>(null)
+  const { openPaywall } = usePaywall()
 
   useEffect(() => {
     fetchData()
@@ -42,12 +52,14 @@ export default function DecisionsPage() {
 
   const fetchData = async () => {
     try {
-      const [suggestionsData, decisionsData] = await Promise.all([
+      const [suggestionsData, decisionsData, quotaData] = await Promise.all([
         getDecisionSuggestions(),
         getDecisionsForAds(),
+        getDecisionQuota(),
       ])
       setSuggestions(suggestionsData)
       setDecisions(decisionsData)
+      setQuota(quotaData)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -63,17 +75,23 @@ export default function DecisionsPage() {
   const handleSaveDecision = async (data: any) => {
     try {
       await logDecision(data)
-      
+
       // Toast de confirmation
       alert(`✅ Décision ${data.action} sauvegardée`)
-      
+
       // Refresh les données
       await fetchData()
       setShowModal(false)
-      
-    } catch (error) {
+
+    } catch (error: any) {
       console.error('Error saving decision:', error)
-      alert('❌ Erreur en sauvegardant')
+      // Afficher le message d'erreur réel
+      const errorMessage = error?.message || 'Erreur inconnue'
+      if (errorMessage.includes('abonnement') || errorMessage.includes('payment')) {
+        alert(`🔒 ${errorMessage}\n\nCette fonctionnalité est réservée aux abonnés.`)
+      } else {
+        alert(`❌ Erreur: ${errorMessage}`)
+      }
     }
   }
 
@@ -105,6 +123,38 @@ export default function DecisionsPage() {
         <h1 className="text-3xl font-bold mb-2">Decision Board</h1>
         <p className="text-gray-600">Suggestions basées sur tes règles</p>
       </div>
+
+      {/* Quota Banner pour utilisateurs gratuits */}
+      {quota && !quota.isPaid && (
+        <div className={`p-4 rounded-lg border-2 ${
+          quota.remaining > 0
+            ? 'bg-blue-50 border-blue-200'
+            : 'bg-red-50 border-red-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className={`font-semibold ${quota.remaining > 0 ? 'text-blue-900' : 'text-red-900'}`}>
+                {quota.remaining > 0
+                  ? `🎯 ${quota.remaining} décision${quota.remaining > 1 ? 's' : ''} gratuite${quota.remaining > 1 ? 's' : ''} restante${quota.remaining > 1 ? 's' : ''}`
+                  : '🔒 Limite atteinte'}
+              </p>
+              <p className={`text-sm ${quota.remaining > 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                {quota.remaining > 0
+                  ? `${quota.used}/${quota.limit} décisions utilisées`
+                  : 'Passez à la version payante pour des décisions illimitées'}
+              </p>
+            </div>
+            {quota.remaining === 0 && (
+              <Button
+                onClick={openPaywall}
+                className="bg-gradient-to-r from-blue-600 to-purple-600"
+              >
+                Passer Pro
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       <Card className="p-6">
         <div className="overflow-x-auto">

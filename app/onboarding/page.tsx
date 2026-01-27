@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useUser } from '@clerk/nextjs'
+import { useUser, SignOutButton } from '@clerk/nextjs'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { LogOut } from 'lucide-react'
 import OnboardingStep1 from '@/components/onboarding/step1-upload'
 import OnboardingStep2 from '@/components/onboarding/step2-tour'
 // MVP: Steps 3 et 4 désactivés pour simplifier
@@ -49,6 +50,16 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
+      {/* Bouton déconnexion en haut à droite */}
+      <div className="absolute top-4 right-4">
+        <SignOutButton redirectUrl="/sign-in">
+          <Button variant="ghost" size="sm" className="text-gray-600 hover:text-red-600">
+            <LogOut className="w-4 h-4 mr-2" />
+            Déconnexion
+          </Button>
+        </SignOutButton>
+      </div>
+
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">

@@ -102,7 +102,7 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
           `❌ Pas assez de données\n\n` +
           `Le fichier contient seulement ${uniqueDates.size} jour(s) de données.\n` +
           `Minimum requis : 7 jours différents.\n\n` +
-          `💡 Astuce : Téléchargez le template qui contient 14 jours de données exemples.`
+          `💡 Astuce : Téléchargez le template qui contient 7 jours de données exemples.`
         )
       }
 
