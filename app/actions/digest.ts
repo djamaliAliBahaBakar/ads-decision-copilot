@@ -4,7 +4,14 @@ import { prisma } from '@/lib/prisma'
 import { Resend } from 'resend'
 import { getOrCreateUser } from '@/lib/get-or-create-user'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+//const resend = new Resend(process.env.RESEND_API_KEY)
+
+function getResendClientOrNull() {
+  const apiKey = process.env.RESEND_API_KEY
+  if (!apiKey) return null
+  return new Resend(apiKey)
+}
+
 
 export async function generateWeeklyDigest(userId: string) {
   try {
@@ -157,6 +164,12 @@ export async function generateWeeklyDigest(userId: string) {
 }
 
 async function sendDigestEmail(user: any, digest: any, decisions: any[]) {
+  const resend = getResendClientOrNull()
+  if (!resend) {
+    console.warn('Resend disabled: missing RESEND_API_KEY')
+    return
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
   const html = `
