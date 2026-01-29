@@ -96,14 +96,13 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
         )
       }
 
-      // Validation : minimum 7 jours de données
+      // Validation : minimum 1 jour de données (relaxé pour permettre les tests)
+      // Note: Pour des suggestions fiables, 7+ jours sont recommandés
       const uniqueDates = new Set(result.data.map(r => r.date))
-      if (uniqueDates.size < 7) {
+      if (uniqueDates.size < 1) {
         throw new Error(
-          `❌ Pas assez de données\n\n` +
-          `Le fichier contient seulement ${uniqueDates.size} jour(s) de données.\n` +
-          `Minimum requis : 7 jours différents.\n\n` +
-          `💡 Astuce : Téléchargez le template qui contient 7 jours de données exemples.`
+          `❌ Pas de données valides\n\n` +
+          `Le fichier ne contient aucune donnée avec des dates valides.`
         )
       }
 

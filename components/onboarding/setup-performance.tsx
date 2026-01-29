@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { ArrowRight, TrendingDown, TrendingUp, Zap } from 'lucide-react'
+import { ArrowRight, TrendingDown, TrendingUp, Zap, Sparkles, CheckCircle2 } from 'lucide-react'
 
 interface AngleData {
   name: string
@@ -125,16 +125,35 @@ export default function SetupPerformance({ uploadedData, onComplete }: SetupPerf
   return (
     <div className="w-full max-w-2xl mx-auto">
 
-      {/* Header */}
+      {/* Header - Different for real data vs demo */}
       <div
         className={`mb-10 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
-        <h1 className="text-3xl md:text-4xl font-bold text-slate-950 mb-3 tracking-tight">
-          Votre vraie <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">performance créa</span>
-        </h1>
-        <p className="text-lg text-slate-600 font-light">
-          Quel angle gagne vraiment. Quel angle saigne votre budget.
-        </p>
+        {hasRealData ? (
+          <>
+            {/* REVEAL MODE - Données réelles */}
+            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium mb-4">
+              <Sparkles className="w-4 h-4" />
+              Analyse terminée
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-950 mb-3 tracking-tight">
+              Voici <span className="bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">VOS vrais résultats</span>
+            </h1>
+            <p className="text-lg text-slate-600 font-light">
+              On a analysé vos données. Voici où concentrer votre budget.
+            </p>
+          </>
+        ) : (
+          <>
+            {/* DEMO MODE */}
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-950 mb-3 tracking-tight">
+              Votre vraie <span className="bg-gradient-to-r from-blue-600 to-blue-500 bg-clip-text text-transparent">performance créa</span>
+            </h1>
+            <p className="text-lg text-slate-600 font-light">
+              Quel angle gagne vraiment. Quel angle saigne votre budget.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Angles Performance Table */}
@@ -229,23 +248,36 @@ export default function SetupPerformance({ uploadedData, onComplete }: SetupPerf
       <div
         className={`mb-8 transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
       >
-        <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-6 md:p-8 shadow-lg relative overflow-hidden">
+        <div className={`rounded-2xl p-6 md:p-8 shadow-lg relative overflow-hidden ${
+          hasRealData
+            ? 'bg-gradient-to-r from-green-600 to-green-500'
+            : 'bg-gradient-to-r from-blue-600 to-blue-500'
+        }`}>
 
           {/* Background accent */}
-          <div className="absolute top-0 right-0 w-40 h-40 bg-blue-400 opacity-10 rounded-full blur-3xl" />
+          <div className={`absolute top-0 right-0 w-40 h-40 opacity-10 rounded-full blur-3xl ${
+            hasRealData ? 'bg-green-400' : 'bg-blue-400'
+          }`} />
 
           <div className="relative z-10">
             <div className="flex items-start gap-3 mb-4">
-              <Zap className="w-6 h-6 text-white flex-shrink-0 mt-1" strokeWidth={2.5} />
+              {hasRealData ? (
+                <CheckCircle2 className="w-6 h-6 text-white flex-shrink-0 mt-1" strokeWidth={2.5} />
+              ) : (
+                <Zap className="w-6 h-6 text-white flex-shrink-0 mt-1" strokeWidth={2.5} />
+              )}
               <div>
                 <p className="text-white text-sm font-semibold uppercase tracking-widest mb-2">
-                  Opportunité
+                  {hasRealData ? 'Votre opportunité réelle' : 'Opportunité'}
                 </p>
                 <h2 className="text-3xl md:text-4xl font-bold text-white">
                   {savings.toLocaleString()}€/mois
                 </h2>
-                <p className="text-blue-100 text-base font-light mt-2">
-                  Si vous concentrez 80% du budget sur les 2 meilleurs angles au lieu de répartir partout.
+                <p className={`text-base font-light mt-2 ${hasRealData ? 'text-green-100' : 'text-blue-100'}`}>
+                  {hasRealData
+                    ? 'C\'est ce que vous pourriez économiser en concentrant 80% du budget sur vos meilleurs angles.'
+                    : 'Si vous concentrez 80% du budget sur les 2 meilleurs angles au lieu de répartir partout.'
+                  }
                 </p>
               </div>
             </div>
