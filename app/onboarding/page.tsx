@@ -7,10 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { LogOut } from 'lucide-react'
 import OnboardingStep1 from '@/components/onboarding/step1-upload'
+import SetupPerformance from '@/components/onboarding/setup-performance'
 import OnboardingStep2 from '@/components/onboarding/step2-tour'
-// MVP: Steps 3 et 4 désactivés pour simplifier
-// import OnboardingStep3 from '@/components/onboarding/step3-rules'
-// import OnboardingStep4 from '@/components/onboarding/step4-decision'
 
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -18,7 +16,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const { user } = useUser()
 
-  const totalSteps = 2 // MVP: Simplifié à 2 étapes (upload + tour)
+  const totalSteps = 3 // Upload → Setup Performance → Tour
 
   const handleNext = () => {
     if (currentStep < totalSteps) {
@@ -61,13 +59,15 @@ export default function OnboardingPage() {
       </div>
 
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Bienvenue{user?.firstName ? ` ${user.firstName}` : ''} ! 👋</h1>
-          <p className="text-gray-600">
-            Configurons ton Ads Decision en 2 minutes
-          </p>
-        </div>
+        {/* Header - Masqué sur Setup Performance qui a son propre header */}
+        {currentStep !== 2 && (
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold mb-2">Bienvenue{user?.firstName ? ` ${user.firstName}` : ''} !</h1>
+            <p className="text-gray-600">
+              Configurons ton Ads Decision en 2 minutes
+            </p>
+          </div>
+        )}
 
         {/* Progress Bar */}
         <div className="mb-8">
@@ -88,7 +88,7 @@ export default function OnboardingPage() {
         </div>
 
         {/* Step Content */}
-        <Card className="p-8 mb-6">
+        <Card className={`mb-6 ${currentStep === 2 ? 'p-4 md:p-8 bg-gradient-to-br from-slate-50 via-white to-slate-100' : 'p-8'}`}>
           {currentStep === 1 && (
             <OnboardingStep1
               onComplete={(data) => {
@@ -99,44 +99,37 @@ export default function OnboardingPage() {
           )}
 
           {currentStep === 2 && (
-            <OnboardingStep2 onComplete={handleComplete} />
-          )}
-
-          {/* MVP: Steps 3 et 4 désactivés
-          {currentStep === 3 && (
-            <OnboardingStep3
+            <SetupPerformance
               uploadedData={uploadedData}
               onComplete={handleNext}
             />
           )}
 
-          {currentStep === 4 && (
-            <OnboardingStep4
-              uploadedData={uploadedData}
-              onComplete={handleComplete}
-            />
+          {currentStep === 3 && (
+            <OnboardingStep2 onComplete={handleComplete} />
           )}
-          */}
         </Card>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between">
-          <Button
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-          >
-            Précédent
-          </Button>
-
-          {currentStep < totalSteps ? (
-            <Button onClick={handleNext} disabled={currentStep === 1}>
-              Suivant
+        {/* Navigation Buttons - Masqué sur l'étape Setup Performance (a son propre CTA) */}
+        {currentStep !== 2 && (
+          <div className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentStep === 1}
+            >
+              Précédent
             </Button>
-          ) : (
-            <Button onClick={handleComplete}>Terminer</Button>
-          )}
-        </div>
+
+            {currentStep < totalSteps ? (
+              <Button onClick={handleNext} disabled={currentStep === 1}>
+                Suivant
+              </Button>
+            ) : (
+              <Button onClick={handleComplete}>Terminer</Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

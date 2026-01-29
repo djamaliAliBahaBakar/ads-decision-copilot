@@ -15,6 +15,7 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
   const [uploadedRows, setUploadedRows] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uploadStats, setUploadStats] = useState<any>(null)
+  const [parsedData, setParsedData] = useState<any[]>([])
   const [parseErrors, setParseErrors] = useState<ParseError[]>([])
   const [correctedCSV, setCorrectedCSV] = useState<string | null>(null)
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null)
@@ -121,6 +122,7 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
 
       setUploadedRows(apiResult.count)
       setUploadStats(apiResult)
+      setParsedData(result.data) // Stocker les données parsées pour l'analyse des angles
 
       // Ne pas passer automatiquement au step suivant
       // L'utilisateur doit confirmer en cliquant sur "C'est correct"
@@ -362,7 +364,7 @@ ${rows.join('\n')}`
 
           {/* Bouton de confirmation */}
           <Button
-            onClick={() => onComplete(uploadStats)}
+            onClick={() => onComplete({ ...uploadStats, rawData: parsedData })}
             size="lg"
             className="w-full"
           >
