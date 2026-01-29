@@ -279,7 +279,69 @@ export async function getDecisionQuota() {
   }
 }
 
-// 👇 FONCTION 5
+// 👇 FONCTION 5 - Get savings realized from decisions
+export async function getRealizedSavings() {
+  const user = await getOrCreateUser()
+
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  // Get all KILL decisions (where we stopped spending on bad ads)
+  const killDecisions = await prisma.decision.findMany({
+    where: {
+      userId: user.id,
+      action: 'KILL',
+    },
+    include: { ad: true },
+  })
+
+  // Estimate savings: if CPL was X and we killed it, we saved ~60% of what we would have spent
+  // We assume the ad would have run for 30 more days at the same daily spend
+  const totalSavings = killDecisions.reduce((sum, decision) => {
+    const dailySpend = decision.ad.spend / 14 // Average daily spend from 14-day data
+    const projectedWaste = dailySpend * 30 * 0.6 // 30 days, 60% would be waste
+    return sum + projectedWaste
+  }, 0)
+
+  // Get potential savings from ads not yet decided (danger status)
+  const fourteenDaysAgo = new Date()
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+
+  const ads = await prisma.ad.findMany({
+    where: {
+      userId: user.id,
+      date: { gte: fourteenDaysAgo },
+    },
+  })
+
+  // Group by ad name, get latest
+  const adsMap = new Map()
+  ads.forEach(ad => {
+    if (!adsMap.has(ad.adName)) {
+      adsMap.set(ad.adName, ad)
+    }
+  })
+
+  // Calculate potential savings from high CPL ads not yet decided
+  const decidedAdIds = new Set(killDecisions.map(d => d.adId))
+  const potentialSavings = Array.from(adsMap.values())
+    .filter(ad => !decidedAdIds.has(ad.id))
+    .filter(ad => ad.cpl > 10) // High CPL threshold
+    .reduce((sum, ad) => {
+      const dailySpend = ad.spend / 14
+      return sum + dailySpend * 30 * 0.6
+    }, 0)
+
+  return {
+    realized: Math.round(totalSavings),
+    potential: Math.round(potentialSavings),
+    decisionsCount: killDecisions.length,
+    adsToDecide: Array.from(adsMap.values()).filter(ad => !decidedAdIds.has(ad.id) && ad.cpl > 10).length,
+  }
+}
+
+// 👇 FONCTION 6
 export async function getAllDecisions() {
   const user = await getOrCreateUser()
 

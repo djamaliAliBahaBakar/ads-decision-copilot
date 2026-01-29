@@ -4,8 +4,10 @@ import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { getAnglesPerformance } from '@/app/actions/ads'
+import { getRealizedSavings, getDecisionQuota } from '@/app/actions/decisions'
 import Link from 'next/link'
-import { TrendingUp, TrendingDown, ArrowRight, Zap, Upload } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowRight, Zap, Upload, CheckCircle2, Sparkles, Lock } from 'lucide-react'
+import { usePaywall } from '@/components/paywall'
 
 interface AngleData {
   name: string
@@ -25,18 +27,41 @@ interface AnglesData {
   worstAngle: AngleData | null
 }
 
+interface SavingsData {
+  realized: number
+  potential: number
+  decisionsCount: number
+  adsToDecide: number
+}
+
+interface QuotaData {
+  isPaid: boolean
+  used: number
+  limit: number
+  remaining: number
+}
+
 export default function DashboardPage() {
   const [data, setData] = useState<AnglesData | null>(null)
+  const [savings, setSavings] = useState<SavingsData | null>(null)
+  const [quota, setQuota] = useState<QuotaData | null>(null)
   const [loading, setLoading] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
+  const { openPaywall } = usePaywall()
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const result = await getAnglesPerformance()
-        setData(result)
+        const [anglesResult, savingsResult, quotaResult] = await Promise.all([
+          getAnglesPerformance(),
+          getRealizedSavings(),
+          getDecisionQuota(),
+        ])
+        setData(anglesResult)
+        setSavings(savingsResult)
+        setQuota(quotaResult)
       } catch (error) {
-        console.error('Error fetching angles:', error)
+        console.error('Error fetching data:', error)
       } finally {
         setLoading(false)
         setTimeout(() => setIsVisible(true), 100)
@@ -234,6 +259,82 @@ export default function DashboardPage() {
                 <h2 className="text-xl font-bold text-white">Tout est sous contrôle</h2>
                 <p className="text-green-100 text-sm">Aucune décision urgente à prendre.</p>
               </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Savings Realized - Show value of decisions made */}
+      {savings && savings.realized > 0 && (
+        <div className={`transition-all duration-700 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-green-700 font-medium">Économies réalisées</p>
+                  <p className="text-2xl font-bold text-green-900">{savings.realized.toLocaleString()}€</p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-green-600">{savings.decisionsCount} décision{savings.decisionsCount > 1 ? 's' : ''} KILL</p>
+                <p className="text-xs text-green-500">Budget réalloué aux winners</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Freemium Upgrade Teaser - Only for free users */}
+      {quota && !quota.isPaid && (
+        <div className={`transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <Card className="border-2 border-dashed border-slate-300 bg-gradient-to-r from-slate-50 to-blue-50 p-6 relative overflow-hidden">
+            {/* Sparkle accent */}
+            <div className="absolute top-2 right-2">
+              <Sparkles className="w-5 h-5 text-blue-400 animate-pulse" />
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Lock className="w-4 h-4 text-slate-500" />
+                  <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Version gratuite
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 mb-1">
+                  {quota.remaining > 0
+                    ? `${quota.remaining} décision${quota.remaining > 1 ? 's' : ''} gratuite${quota.remaining > 1 ? 's' : ''} restante${quota.remaining > 1 ? 's' : ''}`
+                    : 'Tu as utilisé tes 3 décisions gratuites'
+                  }
+                </h3>
+                <p className="text-sm text-slate-600">
+                  Passe Pro pour décisions illimitées + digest email hebdo + suivi des règles
+                </p>
+
+                {/* Features preview */}
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <span className="inline-flex items-center gap-1 text-xs bg-white border border-slate-200 px-2 py-1 rounded-full text-slate-600">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" /> Décisions illimitées
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-xs bg-white border border-slate-200 px-2 py-1 rounded-full text-slate-600">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" /> Digest hebdo
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-xs bg-white border border-slate-200 px-2 py-1 rounded-full text-slate-600">
+                    <CheckCircle2 className="w-3 h-3 text-green-500" /> Tiltmeter™
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                onClick={openPaywall}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold px-6 py-3 h-auto whitespace-nowrap"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Passer Pro
+              </Button>
             </div>
           </Card>
         </div>

@@ -7,6 +7,7 @@ import { getDecisionSuggestions, logDecision, getDecisionsForAds, getDecisionQuo
 import { DecisionModal } from '@/components/decisions/decision-modal'
 import { getActionLabel } from '@/lib/action-labels'
 import { usePaywall } from '@/components/paywall'
+import { Zap, TrendingUp, Mail, Target, ChevronRight } from 'lucide-react'
 
 interface Suggestion {
   id: string
@@ -124,34 +125,87 @@ export default function DecisionsPage() {
         <p className="text-gray-600">Suggestions basées sur tes règles</p>
       </div>
 
-      {/* Quota Banner pour utilisateurs gratuits */}
+      {/* Quota Banner pour utilisateurs gratuits - Focus sur la VALEUR */}
       {quota && !quota.isPaid && (
-        <div className={`p-4 rounded-lg border-2 ${
+        <div className={`rounded-xl overflow-hidden ${
           quota.remaining > 0
-            ? 'bg-blue-50 border-blue-200'
-            : 'bg-red-50 border-red-200'
+            ? 'bg-gradient-to-r from-slate-900 to-slate-800'
+            : 'bg-gradient-to-r from-purple-600 to-blue-600'
         }`}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={`font-semibold ${quota.remaining > 0 ? 'text-blue-900' : 'text-red-900'}`}>
-                {quota.remaining > 0
-                  ? `🎯 ${quota.remaining} décision${quota.remaining > 1 ? 's' : ''} gratuite${quota.remaining > 1 ? 's' : ''} restante${quota.remaining > 1 ? 's' : ''}`
-                  : '🔒 Limite atteinte'}
-              </p>
-              <p className={`text-sm ${quota.remaining > 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                {quota.remaining > 0
-                  ? `${quota.used}/${quota.limit} décisions utilisées`
-                  : 'Passez à la version payante pour des décisions illimitées'}
-              </p>
-            </div>
-            {quota.remaining === 0 && (
+          <div className="p-5">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div className="flex-1">
+                {quota.remaining > 0 ? (
+                  <>
+                    {/* Still have free decisions */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="flex gap-1">
+                        {[...Array(3)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`w-3 h-3 rounded-full ${
+                              i < quota.used ? 'bg-slate-600' : 'bg-green-400'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-slate-300">
+                        {quota.remaining} décision{quota.remaining > 1 ? 's' : ''} gratuite{quota.remaining > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p className="text-white font-semibold mb-1">
+                      Chaque décision compte. Utilise-les bien.
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      Passe Pro pour décider sans limite et suivre tes règles.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    {/* No more free decisions - emphasize opportunity */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <Zap className="w-5 h-5 text-yellow-300" />
+                      <span className="text-yellow-300 font-semibold text-sm uppercase tracking-wide">
+                        Opportunité
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-2">
+                      Continue à optimiser ton budget
+                    </h3>
+                    <p className="text-blue-100 text-sm mb-3">
+                      Tu as {suggestions.length} ad{suggestions.length > 1 ? 's' : ''} à décider.
+                      Chaque mauvaise décision = budget gaspillé.
+                    </p>
+
+                    {/* Value propositions */}
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      <span className="inline-flex items-center gap-1.5 text-white/80">
+                        <Target className="w-3.5 h-3.5" /> Décisions illimitées
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-white/80">
+                        <Mail className="w-3.5 h-3.5" /> Digest hebdo
+                      </span>
+                      <span className="inline-flex items-center gap-1.5 text-white/80">
+                        <TrendingUp className="w-3.5 h-3.5" /> Suivi discipline
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <Button
                 onClick={openPaywall}
-                className="bg-gradient-to-r from-blue-600 to-purple-600"
+                className={`flex items-center gap-2 font-semibold px-5 py-2.5 h-auto ${
+                  quota.remaining > 0
+                    ? 'bg-white text-slate-900 hover:bg-slate-100'
+                    : 'bg-white text-purple-700 hover:bg-purple-50'
+                }`}
               >
+                <Zap className="w-4 h-4" />
                 Passer Pro
+                <ChevronRight className="w-4 h-4" />
               </Button>
-            )}
+            </div>
           </div>
         </div>
       )}
