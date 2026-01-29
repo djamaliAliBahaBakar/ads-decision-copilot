@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
+  Target,
   BookOpen,
   Upload,
   Settings,
@@ -17,10 +18,17 @@ import { Button } from '@/components/ui/button'
 // Navigation items - French (i18n-ready)
 const navigation = [
   {
-    name: 'Tableau de bord',
+    name: 'Mes angles',
     href: '/dashboard',
     icon: LayoutDashboard,
-    description: 'Vue d\'ensemble et suggestions',
+    description: 'Performance par angle créatif',
+  },
+  {
+    name: 'Décider',
+    href: '/dashboard/decisions',
+    icon: Target,
+    description: 'Prendre des décisions sur mes ads',
+    highlight: true, // Pour le mettre en avant
   },
   {
     name: 'Journal',
@@ -29,7 +37,7 @@ const navigation = [
     description: 'Historique des décisions',
   },
   {
-    name: 'Import CSV',
+    name: 'Import',
     href: '/dashboard/upload',
     icon: Upload,
     description: 'Importer des données',
@@ -105,8 +113,10 @@ export function Sidebar() {
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href ||
+                (item.href !== '/dashboard' && pathname?.startsWith(item.href))
               const Icon = item.icon
+              const isHighlight = 'highlight' in item && item.highlight
 
               return (
                 <Link
@@ -117,25 +127,37 @@ export function Sidebar() {
                     flex items-center gap-3 px-4 py-3 rounded-lg transition-all
                     ${
                       isActive
-                        ? 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 font-semibold shadow-sm'
-                        : 'text-gray-700 hover:bg-gray-50'
+                        ? isHighlight
+                          ? 'bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 font-semibold shadow-sm'
+                          : 'bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 font-semibold shadow-sm'
+                        : isHighlight
+                          ? 'text-green-700 hover:bg-green-50 font-medium'
+                          : 'text-gray-700 hover:bg-gray-50'
                     }
                   `}
                 >
                   <Icon
-                    className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-500'}`}
-                    strokeWidth={isActive ? 2.5 : 2}
+                    className={`w-5 h-5 ${
+                      isActive
+                        ? isHighlight ? 'text-green-600' : 'text-blue-600'
+                        : isHighlight ? 'text-green-600' : 'text-gray-500'
+                    }`}
+                    strokeWidth={isActive || isHighlight ? 2.5 : 2}
                   />
                   <div className="flex-1">
                     <div className="text-sm">{item.name}</div>
                     {isActive && (
-                      <div className="text-xs text-gray-600 mt-0.5">
+                      <div className={`text-xs mt-0.5 ${isHighlight ? 'text-green-600' : 'text-gray-600'}`}>
                         {item.description}
                       </div>
                     )}
                   </div>
                   {isActive && (
-                    <div className="w-1 h-6 bg-gradient-to-b from-blue-600 to-purple-600 rounded-full" />
+                    <div className={`w-1 h-6 rounded-full ${
+                      isHighlight
+                        ? 'bg-gradient-to-b from-green-500 to-emerald-500'
+                        : 'bg-gradient-to-b from-blue-600 to-purple-600'
+                    }`} />
                   )}
                 </Link>
               )
