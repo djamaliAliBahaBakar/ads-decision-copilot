@@ -3,116 +3,82 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getWeekData } from '@/app/actions/ads'
+import { getAnglesPerformance } from '@/app/actions/ads'
 import Link from 'next/link'
-// import { DisciplineWidget } from '@/components/tiltmeter/discipline-widget' // MVP: Désactivé
-import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
+import { TrendingUp, TrendingDown, ArrowRight, Zap, Upload } from 'lucide-react'
 
-interface Ad {
-  id: string
-  adName: string
-  campaignName: string | null
-  angle: string | null
+interface AngleData {
+  name: string
   cpl: number
   spend: number
   leads: number
-  ctr: number | null
-  roas: number | null
-  date: Date
+  adCount: number
+  status: 'winner' | 'strong' | 'ok' | 'danger'
+  stars: number
 }
 
-interface WeekData {
+interface AnglesData {
+  angles: AngleData[]
   totalSpend: number
-  totalLeads: number
-  avgCpl: number
-  avgRoas: number
-  cplTrend: number
-  ads: Ad[]
-  graphData: { date: string; cpl: number }[]
+  potentialSavings: number
+  adsToDecide: number
+  worstAngle: AngleData | null
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<WeekData | null>(null)
+  const [data, setData] = useState<AnglesData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setError(null)
-        const result = await getWeekData()
+        const result = await getAnglesPerformance()
         setData(result)
-      } catch (err) {
-        setError('Erreur chargement données')
-        console.error('Error fetching data:', err)
+      } catch (error) {
+        console.error('Error fetching angles:', error)
       } finally {
         setLoading(false)
+        setTimeout(() => setIsVisible(true), 100)
       }
     }
-
     fetchData()
   }, [])
 
-  if (error) {
-    return (
-      <div className="space-y-4">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <p className="text-red-900 font-semibold">❌ {error}</p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="mt-4"
-            variant="outline"
-          >
-            Réessayer
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   if (loading) {
     return (
-      <div className="space-y-8">
-        <div>
-          <div className="h-8 skeleton rounded w-64 mb-2"></div>
-          <div className="h-4 skeleton rounded w-96"></div>
+      <div className="max-w-3xl mx-auto p-4 md:p-8">
+        <div className="animate-pulse space-y-6">
+          <div className="h-10 bg-slate-200 rounded w-2/3"></div>
+          <div className="h-6 bg-slate-200 rounded w-1/2"></div>
+          <div className="space-y-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="h-20 bg-slate-200 rounded-xl"></div>
+            ))}
+          </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array(4).fill(0).map((_, i) => (
-            <CardSkeleton key={i} />
-          ))}
-        </div>
-
-        <CardSkeleton />
-        <TableSkeleton />
       </div>
     )
   }
 
+  // Pas de données → Inciter à uploader
   if (!data) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <span className="text-3xl">📊</span>
+      <div className="max-w-3xl mx-auto p-4 md:p-8">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-purple-100 rounded-2xl flex items-center justify-center mb-6">
+            <Upload className="w-10 h-10 text-blue-600" />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900">Pas de données</h2>
-          <p className="text-gray-600 max-w-md">
-            Uploadez votre premier fichier CSV pour commencer à analyser vos campagnes Meta Ads
+          <h1 className="text-3xl font-bold text-slate-950 mb-3">
+            Découvre tes angles gagnants
+          </h1>
+          <p className="text-lg text-slate-600 mb-8 max-w-md">
+            Importe tes données Meta Ads pour voir quel angle créatif performe le mieux.
           </p>
           <Link href="/dashboard/upload">
-            <Button className="mt-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-              📤 Upload CSV
+            <Button size="lg" className="bg-slate-950 hover:bg-slate-900">
+              <Upload className="w-5 h-5 mr-2" />
+              Importer mes données
             </Button>
           </Link>
         </div>
@@ -121,137 +87,173 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8 fade-in">
-      <div>
-        <h1 className="text-3xl font-bold mb-2 bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          Dashboard
+    <div className="max-w-3xl mx-auto p-4 md:p-8 space-y-8">
+
+      {/* Header */}
+      <div className={`transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <h1 className="text-3xl md:text-4xl font-bold text-slate-950 mb-2 tracking-tight">
+          Tes angles créatifs
         </h1>
-        <p className="text-gray-600">Vue d'ensemble de vos campagnes cette semaine</p>
+        <p className="text-lg text-slate-600 font-light">
+          Où va ton budget. Lequel performe.
+        </p>
       </div>
 
-      {/* 4 Metrics Cards - Responsive */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-6 hover:shadow-lg slide-up">
-          <p className="text-sm text-gray-600 mb-2">Spend</p>
-          <p className="text-2xl font-bold">€{data.totalSpend.toFixed(0)}</p>
-          <p className="text-xs text-gray-500 mt-2">Cette semaine</p>
-        </Card>
+      {/* Angles Performance Table */}
+      <div className={`transition-all duration-700 delay-150 ${isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}>
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-lg overflow-hidden">
 
-        <Card className="p-6 hover:shadow-lg slide-up" style={{ animationDelay: '0.1s' }}>
-          <p className="text-sm text-gray-600 mb-2">Leads</p>
-          <p className="text-2xl font-bold">{data.totalLeads}</p>
-          <p className="text-xs text-gray-500 mt-2">Conversions</p>
-        </Card>
+          {/* Table Header */}
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white px-6 py-4 flex items-center justify-between">
+            <span className="text-sm font-semibold text-slate-300 uppercase tracking-widest">Angle</span>
+            <span className="text-sm font-semibold text-slate-300 uppercase tracking-widest">CPL</span>
+          </div>
 
-        <Card className="p-6 hover:shadow-lg slide-up" style={{ animationDelay: '0.2s' }}>
-          <p className="text-sm text-gray-600 mb-2">CPL moyen</p>
-          <p className="text-2xl font-bold">€{data.avgCpl.toFixed(2)}</p>
-          <p className={`text-xs mt-2 font-semibold ${data.cplTrend > 0 ? 'text-red-600' : 'text-green-600'}`}>
-            {data.cplTrend > 0 ? '📈' : '📉'} {Math.abs(data.cplTrend).toFixed(1)}%
-          </p>
-        </Card>
+          {/* Angles List */}
+          <div className="divide-y divide-slate-200">
+            {data.angles.map((angle, idx) => (
+              <div
+                key={angle.name}
+                className={`px-6 py-5 hover:bg-slate-50 transition-all duration-300 ${
+                  isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'
+                }`}
+                style={{ transitionDelay: `${200 + idx * 100}ms` }}
+              >
+                <div className="flex items-center justify-between mb-3">
 
-        <Card className="p-6 hover:shadow-lg slide-up" style={{ animationDelay: '0.3s' }}>
-          <p className="text-sm text-gray-600 mb-2">ROAS moyen</p>
-          <p className="text-2xl font-bold">{data.avgRoas.toFixed(2)}x</p>
-          <p className="text-xs text-gray-500 mt-2">Retour investi</p>
-        </Card>
-      </div>
+                  {/* Left: Name & Stars */}
+                  <div className="flex items-center gap-4">
+                    <div className="min-w-[120px]">
+                      <h3 className="font-bold text-slate-950 text-lg">{angle.name}</h3>
+                      <p className="text-xs text-slate-500">{angle.adCount} ad{angle.adCount > 1 ? 's' : ''}</p>
+                    </div>
 
-      {/* MVP: Discipline Widget désactivé pour simplifier
-      <div className="slide-up" style={{ animationDelay: '0.4s' }}>
-        <DisciplineWidget />
-      </div>
-      */}
+                    {/* Stars */}
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`w-2 h-2 rounded-full transition-colors ${
+                            i < angle.stars ? 'bg-yellow-400' : 'bg-slate-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
 
-      {/* Graph */}
-      <Card className="p-6 hover:shadow-lg slide-up" style={{ animationDelay: '0.5s' }}>
-        <h2 className="text-lg font-semibold mb-4">CPL Evolution (7 jours)</h2>
-        <div className="overflow-x-auto">
-          <ResponsiveContainer width="100%" height={300} minWidth={250}>
-            <LineChart data={data.graphData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#fff',
-                  border: '1px solid #e5e7eb',
-                  borderRadius: '8px',
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="cpl"
-                stroke="#3b82f6"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+                  {/* Right: Metrics */}
+                  <div className="flex items-center gap-4 text-right">
+                    <div>
+                      <p className="text-2xl font-bold text-slate-950">{angle.cpl.toFixed(2)}€</p>
+                      <p className="text-xs text-slate-500">{angle.spend.toFixed(0)}€ dépensé</p>
+                    </div>
+                    <div className="w-8">
+                      {angle.status === 'winner' ? (
+                        <TrendingUp className="w-6 h-6 text-green-500" strokeWidth={2.5} />
+                      ) : angle.status === 'danger' ? (
+                        <TrendingDown className="w-6 h-6 text-red-500" strokeWidth={2.5} />
+                      ) : (
+                        <div className="w-6 h-6 text-slate-400 flex items-center justify-center">→</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Performance Bar */}
+                <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-1000 ${
+                      angle.status === 'winner'
+                        ? 'bg-gradient-to-r from-green-500 to-green-400'
+                        : angle.status === 'strong'
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-400'
+                        : angle.status === 'ok'
+                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-400'
+                        : 'bg-gradient-to-r from-red-500 to-red-400'
+                    }`}
+                    style={{
+                      width: isVisible
+                        ? `${Math.max(20, 100 - ((angle.cpl / data.angles[data.angles.length - 1].cpl) * 50))}%`
+                        : '0%'
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Table */}
-      <Card className="p-6 hover:shadow-lg slide-up" style={{ animationDelay: '0.6s' }}>
-        <h2 className="text-lg font-semibold mb-4">Tes Ads</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="text-left p-2">Ad</th>
-                <th className="text-left p-2">Campaign</th>
-                <th className="text-left p-2">Angle</th>
-                <th className="text-right p-2">CPL</th>
-                <th className="text-right p-2">Spend</th>
-                <th className="text-right p-2">Leads</th>
-                <th className="text-right p-2 hidden md:table-cell">CTR</th>
-                <th className="text-right p-2 hidden md:table-cell">ROAS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.ads.map((ad, idx) => (
-                <tr
-                  key={ad.id}
-                  className="border-b hover:bg-blue-50 transition-colors"
-                  style={{ animationDelay: `${0.7 + idx * 0.05}s` }}
-                >
-                  <td className="p-2 font-medium text-sm">{ad.adName}</td>
-                  <td className="p-2 text-sm">{ad.campaignName}</td>
-                  <td className="p-2">
-                    <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                      {ad.angle}
-                    </span>
-                  </td>
-                  <td className="p-2 text-right">€{ad.cpl.toFixed(2)}</td>
-                  <td className="p-2 text-right">€{ad.spend.toFixed(0)}</td>
-                  <td className="p-2 text-right">{ad.leads}</td>
-                  <td className="p-2 text-right hidden md:table-cell">
-                    {ad.ctr ? (ad.ctr * 100).toFixed(2) + '%' : '-'}
-                  </td>
-                  <td className="p-2 text-right hidden md:table-cell">
-                    {ad.roas ? ad.roas.toFixed(2) + 'x' : '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Action Card - Only if there are ads to decide */}
+      {data.adsToDecide > 0 && data.potentialSavings > 0 && (
+        <div className={`transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <Card className="bg-gradient-to-r from-red-600 to-red-500 border-0 p-6 md:p-8 shadow-lg relative overflow-hidden">
+
+            {/* Background accent */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-red-400 opacity-10 rounded-full blur-3xl" />
+
+            <div className="relative z-10">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <Zap className="w-6 h-6 text-white flex-shrink-0 mt-1" strokeWidth={2.5} />
+                  <div>
+                    <p className="text-white text-sm font-semibold uppercase tracking-widest mb-1">
+                      Opportunité
+                    </p>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white">
+                      {data.potentialSavings.toLocaleString()}€/mois à récupérer
+                    </h2>
+                    <p className="text-red-100 text-sm font-light mt-1">
+                      {data.adsToDecide} ad{data.adsToDecide > 1 ? 's' : ''} à décider sur {data.worstAngle?.name || 'tes angles'}
+                    </p>
+                  </div>
+                </div>
+
+                <Link href="/dashboard/decisions">
+                  <Button
+                    size="lg"
+                    className="bg-white text-red-600 hover:bg-red-50 font-bold w-full md:w-auto"
+                  >
+                    Décider maintenant
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </Card>
         </div>
-      </Card>
+      )}
 
-      {/* CTAs */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <Link href="/dashboard/decisions">
-          <Button className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
-            🎯 Prendre des décisions
+      {/* All good state */}
+      {data.adsToDecide === 0 && (
+        <div className={`transition-all duration-700 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+          <Card className="bg-gradient-to-r from-green-600 to-green-500 border-0 p-6 md:p-8 shadow-lg">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="w-6 h-6 text-white" strokeWidth={2.5} />
+              <div>
+                <h2 className="text-xl font-bold text-white">Tout est sous contrôle</h2>
+                <p className="text-green-100 text-sm">Aucune décision urgente à prendre.</p>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Secondary actions */}
+      <div className={`flex gap-4 transition-all duration-700 delay-700 ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+        <Link href="/dashboard/upload" className="flex-1">
+          <Button variant="outline" className="w-full">
+            <Upload className="w-4 h-4 mr-2" />
+            Mettre à jour les données
           </Button>
         </Link>
-        <Link href="/dashboard/upload">
-          <Button variant="outline" className="w-full md:w-auto">
-            📤 Upload plus de données
+        <Link href="/dashboard/journal" className="flex-1">
+          <Button variant="outline" className="w-full">
+            Voir l'historique
           </Button>
         </Link>
       </div>
+
     </div>
   )
 }

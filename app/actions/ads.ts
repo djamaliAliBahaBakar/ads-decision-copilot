@@ -133,3 +133,103 @@ export async function getWeekData() {
     graphData,
   }
 }
+
+// Nouvelle fonction pour le Dashboard centré sur les angles
+export async function getAnglesPerformance() {
+  const user = await getOrCreateUser()
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  // Get last 14 days of data
+  const fourteenDaysAgo = new Date()
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+
+  const ads = await prisma.ad.findMany({
+    where: {
+      userId: user.id,
+      date: { gte: fourteenDaysAgo },
+    },
+  })
+
+  if (ads.length === 0) {
+    return null
+  }
+
+  // Grouper par angle
+  const angleGroups: Record<string, {
+    totalSpend: number
+    totalLeads: number
+    adCount: number
+    ads: string[]
+  }> = {}
+
+  ads.forEach(ad => {
+    const angle = ad.angle || 'AUTRE'
+    if (!angleGroups[angle]) {
+      angleGroups[angle] = { totalSpend: 0, totalLeads: 0, adCount: 0, ads: [] }
+    }
+    angleGroups[angle].totalSpend += ad.spend
+    angleGroups[angle].totalLeads += ad.leads
+    angleGroups[angle].adCount++
+    if (!angleGroups[angle].ads.includes(ad.adName)) {
+      angleGroups[angle].ads.push(ad.adName)
+    }
+  })
+
+  // Calculer CPL par angle et trier
+  const angles = Object.entries(angleGroups)
+    .map(([name, data]) => ({
+      name: name.toUpperCase(),
+      cpl: data.totalLeads > 0 ? data.totalSpend / data.totalLeads : 999,
+      spend: data.totalSpend,
+      leads: data.totalLeads,
+      adCount: data.ads.length,
+    }))
+    .filter(a => a.leads > 0)
+    .sort((a, b) => a.cpl - b.cpl)
+
+  if (angles.length === 0) {
+    return null
+  }
+
+  // Assigner statut basé sur le ranking CPL
+  const bestCpl = angles[0].cpl
+  const anglesWithStatus = angles.map((angle) => {
+    const ratio = angle.cpl / bestCpl
+    let status: 'winner' | 'strong' | 'ok' | 'danger'
+    let stars: number
+
+    if (ratio <= 1.1) {
+      status = 'winner'
+      stars = 5
+    } else if (ratio <= 1.5) {
+      status = 'strong'
+      stars = 4
+    } else if (ratio <= 2.0) {
+      status = 'ok'
+      stars = 3
+    } else {
+      status = 'danger'
+      stars = Math.max(1, 3 - Math.floor(ratio / 2))
+    }
+
+    return { ...angle, status, stars }
+  })
+
+  // Calculer l'opportunité (économies potentielles)
+  const totalSpend = angles.reduce((sum, a) => sum + a.spend, 0)
+  const dangerAngles = anglesWithStatus.filter(a => a.status === 'danger')
+  const potentialSavings = dangerAngles.reduce((sum, a) => sum + a.spend * 0.6, 0)
+
+  // Compter les ads à décider (celles des angles "danger")
+  const adsToDecide = dangerAngles.reduce((sum, a) => sum + a.adCount, 0)
+
+  return {
+    angles: anglesWithStatus,
+    totalSpend,
+    potentialSavings: Math.round(potentialSavings),
+    adsToDecide,
+    worstAngle: dangerAngles.length > 0 ? dangerAngles[dangerAngles.length - 1] : null,
+  }
+}
