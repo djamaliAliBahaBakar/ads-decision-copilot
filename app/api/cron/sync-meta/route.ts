@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-/**
- * Cron job for automatic Meta Ads sync
- * Runs daily to sync all active Meta accounts
- *
- * Configure in Vercel:
- * - Path: /api/cron/sync-meta
- * - Schedule: 0 6 * * * (6 AM UTC daily)
- * - Authorization: Bearer CRON_SECRET
- */
-export async function GET(req: NextRequest) {
-  // Verify cron secret
-  const authHeader = req.headers.get('authorization')
-  const expectedAuth = `Bearer ${process.env.CRON_SECRET}`
+export const runtime = 'nodejs'
 
-  if (authHeader !== expectedAuth) {
+export async function GET(req: NextRequest) {
+  // --- Auth: header OU query param (vercel.json ne permet pas les headers) ---
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Missing CRON_SECRET' }, { status: 500 })
+  }
+
+  const url = new URL(req.url)
+  const token = url.searchParams.get('token')
+
+  const authHeader = req.headers.get('authorization')
+  const expectedAuth = `Bearer ${cronSecret}`
+
+  const isAuthorized = authHeader === expectedAuth || token === cronSecret
+
+  if (!isAuthorized) {
     console.error('[Cron Meta Sync] Unauthorized request')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -22,12 +25,17 @@ export async function GET(req: NextRequest) {
   try {
     console.log('[Cron Meta Sync] Starting daily Meta sync...')
 
-    // Call the Meta sync API
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    // Base URL server-side
+    const baseUrl =
+      process.env.APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL || // fallback si tu n'as pas encore APP_URL
+      'http://localhost:3000'
+
+    // Call the Meta sync API (on garde l'Authorization côté interne)
     const response = await fetch(`${baseUrl}/api/meta/sync`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+        Authorization: expectedAuth,
       },
     })
 

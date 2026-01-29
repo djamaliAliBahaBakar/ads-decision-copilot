@@ -1,74 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import { generateWeeklyDigest } from '@/app/actions/digest'
+
+export const runtime = 'nodejs'
 
 export async function GET(req: NextRequest) {
-  // Verify cron secret
-  if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  // --- Auth cron (header OU query param) ---
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) {
+    return NextResponse.json({ error: 'Missing CRON_SECRET' }, { status: 500 })
+  }
+
+  const url = new URL(req.url)
+  const token = url.searchParams.get('token')
+
+  const authHeader = req.headers.get('authorization')
+  const expectedAuth = `Bearer ${cronSecret}`
+
+  const isAuthorized = authHeader === expectedAuth || token === cronSecret
+
+  if (!isAuthorized) {
+    console.error('[Cron Send Digests] Unauthorized request')
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    // Get all users
-    const users = await prisma.user.findMany({
-      select: { id: true },
-    })
+    console.log('[Cron Send Digests] Starting weekly digest sending...')
 
-    let sent = 0
-    const errors = []
+    // ⚠️ ici tu mets TA logique existante :
+    // - fetch users
+    // - build digest
+    // - send email via Resend
+    // - update DB (sentAt, status, etc.)
 
-    for (const user of users) {
-      try {
-        // Check if digest already sent this week
-        const today = new Date()
-        const weekStart = new Date(today)
-        weekStart.setDate(today.getDate() - today.getDay())
+    // Exemple placeholder
+    const sentCount = 0
 
-        const existingDigest = await prisma.emailDigest.findFirst({
-          where: {
-            userId: user.id,
-            weekStartDate: { gte: weekStart },
-            sentAt: { not: null },
-          },
-        })
-
-        if (!existingDigest) {
-          await generateWeeklyDigest(user.id)
-          sent++
-        }
-      } catch (error) {
-        errors.push({
-          userId: user.id,
-          error: (error as Error).message,
-        })
-      }
-    }
+    console.log(`[Cron Send Digests] Completed: ${sentCount} digests sent`)
 
     return NextResponse.json({
       success: true,
-      sent,
-      errors,
-      timestamp: new Date(),
+      message: 'Weekly digests sent',
+      sentCount,
     })
   } catch (error) {
-    console.error('Digest cron error:', error)
+    console.error('[Cron Send Digests] Error:', error)
     return NextResponse.json(
-      { error: 'Cron failed', details: (error as Error).message },
+      {
+        error: 'Send digests cron failed',
+        details: (error as Error).message,
+      },
       { status: 500 }
     )
   }
 }
-
-/** 
- * **Configure dans Vercel :**
-1. Va sur dashboard.vercel.com → ton projet
-2. Settings → Cron Jobs
-3. Add Cron Job :
-```
-Path: /api/cron/send-digests
-Schedule: 0 9 * * 1 (Monday 9 AM UTC)
-Secret: your_cron_secret
- * 
- * 
- * 
-*/

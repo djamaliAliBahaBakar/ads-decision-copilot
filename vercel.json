@@ -1,6 +1,12 @@
 {
-  "crons": [{
-    "path": "/api/cron/sync-meta",
-    "schedule": "0 9 * * 1"
-  }]
+  "crons": [
+    {
+      "path": "/api/cron/sync-meta?x-vercel-protection-bypass=${VERCEL_AUTOMATION_BYPASS_SECRET}&token=${CRON_SECRET}",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/send-digests?x-vercel-protection-bypass=${VERCEL_AUTOMATION_BYPASS_SECRET}&token=${CRON_SECRET}",
+      "schedule": "0 9 * * 1"
+    }
+  ]
 }
