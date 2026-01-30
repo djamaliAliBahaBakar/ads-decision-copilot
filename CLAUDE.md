@@ -67,6 +67,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Success page**: `/payment/success` - Confirmation après paiement
 - **Paywall Modal**: `components/paywall/paywall-modal.tsx`
 
+**Early Adopter Pricing**:
+- Prix garanti à vie pour les premiers utilisateurs
+- Même si le prix augmente, les early adopters gardent leur tarif
+- Affiché avec badge "Garanti à vie" dans le paywall
+
 ### Email Digests
 
 Weekly performance emails sent via Resend:
@@ -80,6 +85,24 @@ Weekly performance emails sent via Resend:
 - **Manual sync**: Button in settings
 - **Auto sync**: Daily cron at 6 AM UTC via `/api/cron/sync-meta`
 - **Data imported**: Campaigns, ads, spend, impressions, clicks, leads, CPL, CTR
+- **Key function**: `syncMetaAdsForUser(userId)` in `app/actions/meta.ts`
+
+### Cron Jobs (Vercel)
+
+Configuration in `vercel.json`:
+
+| Cron | Schedule | Endpoint |
+|------|----------|----------|
+| Meta Sync | `0 6 * * *` (6 AM UTC daily) | `/api/cron/sync-meta` |
+| Email Digests | `0 9 * * 1` (Monday 9 AM UTC) | `/api/cron/send-digests` |
+
+**Authentication** (supports both methods):
+- Bearer token: `Authorization: Bearer ${CRON_SECRET}`
+- Query param: `?token=${CRON_SECRET}`
+
+**Vercel Deployment Protection**: Cron URLs include `x-vercel-protection-bypass` param.
+
+**Important**: Cron routes call functions directly (no internal HTTP calls) to avoid middleware/protection issues.
 
 ### Legal Pages
 
@@ -100,6 +123,11 @@ npm start                # Start production server
 # Linting
 npm run lint             # Run ESLint
 
+# Testing
+npm test                 # Run all tests
+npm test -- --watch      # Run tests in watch mode
+npm test -- __tests__/lib/quota.test.ts  # Run specific test file
+
 # Database
 npx prisma generate      # Generate Prisma client after schema changes
 npx prisma db push       # Push schema changes to database (dev)
@@ -107,6 +135,21 @@ npx prisma migrate dev   # Create and apply migrations
 npx prisma studio        # Open Prisma Studio GUI
 npm run prisma:seed      # Seed database (requires existing Clerk user)
 ```
+
+## Testing
+
+Tests are located in `__tests__/` directory:
+
+| Test File | Description |
+|-----------|-------------|
+| `lib/quota.test.ts` | Freemium quota system (3 free decisions) |
+| `lib/access.test.ts` | Access levels (FREE_PREVIEW, PAID, SUPERUSER) |
+| `api/cron.test.ts` | Cron authentication (Bearer token, query param) |
+| `api/stripe-webhook.test.ts` | Stripe webhook business logic |
+
+**Mocks**: `__tests__/mocks/prisma.ts` provides Prisma client mocks.
+
+**Setup**: `jest.setup.js` configures environment variables for tests.
 
 ## Architecture Overview
 
@@ -117,6 +160,21 @@ All authenticated operations use the `getOrCreateUser()` helper from `lib/get-or
 - Looks up the corresponding user in Prisma by `clerkId`
 - Auto-creates the user in Prisma if not found (syncing email from Clerk)
 - **Pattern**: Always call `getOrCreateUser()` at the start of server actions
+
+### Middleware Configuration
+
+`middleware.ts` uses Clerk middleware with public routes:
+
+**Public routes** (no auth required):
+- `/sign-in`, `/sign-up` - Auth pages
+- `/` - Landing page
+- `/api/webhook(.*)` - Clerk webhooks
+- `/api/stripe/webhook` - Stripe webhooks
+- `/api/cron(.*)` - Cron jobs
+- `/api/meta/sync` - Meta sync endpoint
+- `/cgv`, `/mentions-legales` - Legal pages
+
+**Matcher excludes**: Static files, webhooks, cron routes from middleware processing.
 
 ### Access Control Flow
 
@@ -245,6 +303,9 @@ RESEND_API_KEY="..."
 
 # Cron jobs
 CRON_SECRET="..."
+
+# Vercel (auto-set, for deployment protection bypass)
+VERCEL_AUTOMATION_BYPASS_SECRET="..."
 ```
 
 ## Key Conventions
