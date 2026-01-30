@@ -69,6 +69,12 @@ export default function DecisionsPage() {
   }
 
   const handleDecide = (ad: Suggestion) => {
+    // Si quota épuisé → ouvrir paywall directement
+    if (quota && !quota.isPaid && quota.remaining <= 0) {
+      openPaywall()
+      return
+    }
+
     setSelectedAd(ad)
     setShowModal(true)
   }
@@ -86,10 +92,20 @@ export default function DecisionsPage() {
 
     } catch (error: any) {
       console.error('Error saving decision:', error)
-      // Afficher le message d'erreur réel
       const errorMessage = error?.message || 'Erreur inconnue'
-      if (errorMessage.includes('abonnement') || errorMessage.includes('payment')) {
-        alert(`🔒 ${errorMessage}\n\nCette fonctionnalité est réservée aux abonnés.`)
+
+      // Détecter erreur de quota → Ouvrir le paywall directement
+      if (
+        errorMessage.includes('limite') ||
+        errorMessage.includes('décisions gratuites') ||
+        errorMessage.includes('abonnement') ||
+        errorMessage.includes('payante') ||
+        errorMessage.includes('Passez à la version')
+      ) {
+        setShowModal(false) // Fermer le modal de décision
+        // Refresh quota pour afficher le bon état
+        await fetchData()
+        openPaywall() // Ouvrir le paywall
       } else {
         alert(`❌ Erreur: ${errorMessage}`)
       }
