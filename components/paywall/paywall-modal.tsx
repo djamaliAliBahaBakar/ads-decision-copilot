@@ -53,7 +53,8 @@ export function PaywallModal({ isOpen, onClose, onSuccess }: PaywallModalProps) 
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-gray-500 hover:text-gray-700 transition-colors z-10"
+          aria-label="Fermer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -73,7 +74,7 @@ export function PaywallModal({ isOpen, onClose, onSuccess }: PaywallModalProps) 
             Arrête de douter. Décide plus vite, plus sereinement.
           </p>
 
-          <p className="text-sm text-white/70 mt-2">
+          <p className="text-sm text-white/85 mt-2">
             Un cadre clair pour savoir quoi faire de chaque Ad.
           </p>
         </div>
@@ -103,7 +104,7 @@ export function PaywallModal({ isOpen, onClose, onSuccess }: PaywallModalProps) 
             >
               <p className="text-2xl font-bold text-gray-900">29 €</p>
               <p className="text-sm text-gray-600">/mois</p>
-              <p className="text-xs text-gray-400 mt-1">Sans engagement</p>
+              <p className="text-xs text-gray-500 mt-1">Sans engagement</p>
             </button>
 
             {/* Quarterly */}
@@ -122,7 +123,7 @@ export function PaywallModal({ isOpen, onClose, onSuccess }: PaywallModalProps) 
               </span>
               <p className="text-2xl font-bold text-gray-900">79 €</p>
               <p className="text-sm text-gray-600">/trimestre</p>
-              <p className="text-xs text-gray-400 mt-1">~26 €/mois</p>
+              <p className="text-xs text-gray-500 mt-1">~26 €/mois</p>
             </button>
           </div>
         </div>

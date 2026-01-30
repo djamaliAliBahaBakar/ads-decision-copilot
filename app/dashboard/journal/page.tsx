@@ -138,7 +138,7 @@ export default function JournalPage() {
         {filteredDecisions.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">📭 Aucune décision pour le moment</p>
-            <p className="text-gray-400 text-sm mt-2">
+            <p className="text-gray-500 text-sm mt-2">
               Crée des décisions sur le Decision Board
             </p>
           </div>
