@@ -4,7 +4,7 @@ import Stripe from 'stripe'
 import { upgradeUserToPaid, downgradeUser } from '@/lib/access'
 
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2025-12-15.clover' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-01-28.clover' })
   : null
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
