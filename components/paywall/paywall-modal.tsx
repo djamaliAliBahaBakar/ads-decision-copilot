@@ -85,7 +85,7 @@ export function PaywallModal({ isOpen, onClose, onSuccess }: PaywallModalProps) 
               Tarif early adopter
             </p>
             <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded-full font-medium">
-              Jusqu'au 28 février
+              Garanti à vie
             </span>
           </div>
 
@@ -183,6 +183,9 @@ export function PaywallModal({ isOpen, onClose, onSuccess }: PaywallModalProps) 
 
           <p className="text-xs text-gray-500 text-center mt-3">
             Paiement sécurisé par Stripe. Annulable en 1 clic.
+          </p>
+          <p className="text-xs text-blue-600 text-center mt-2 font-medium">
+            Ce tarif reste le tien à vie, même si le prix augmente.
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhook(.*)',
   '/api/stripe/webhook',
   '/api/cron(.*)',
+  '/api/meta/sync',
   '/cgv',
   '/mentions-legales',
 ])
@@ -20,6 +21,6 @@ export default clerkMiddleware(async (auth, request) => {
 export const config = {
   matcher: [
     // Exclude static files and specific API routes from middleware
-    '/((?!_next|api/stripe/webhook|api/cron|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/((?!_next|api/stripe/webhook|api/cron|api/meta/sync|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
   ],
 }
