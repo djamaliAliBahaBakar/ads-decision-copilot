@@ -9,9 +9,17 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
 
+// Force Node.js runtime (not Edge) to avoid middleware issues
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
+  console.log('Webhook called - checking config...')
+  console.log('STRIPE_SECRET_KEY set:', !!process.env.STRIPE_SECRET_KEY)
+  console.log('STRIPE_WEBHOOK_SECRET set:', !!process.env.STRIPE_WEBHOOK_SECRET)
+
   if (!stripe || !webhookSecret) {
-    console.error('Stripe not configured')
+    console.error('Stripe not configured - stripe:', !!stripe, 'webhookSecret:', !!webhookSecret)
     return NextResponse.json({ error: 'Stripe not configured' }, { status: 500 })
   }
 
