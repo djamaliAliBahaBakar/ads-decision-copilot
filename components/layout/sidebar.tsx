@@ -166,7 +166,7 @@ export function Sidebar() {
 
           {/* Footer */}
           <div className="p-4 border-t border-gray-200">
-            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg p-4 mb-3">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-4 h-4 text-blue-600" />
                 <span className="text-xs font-semibold text-gray-900">Ads Decision</span>
@@ -174,6 +174,17 @@ export function Sidebar() {
               <p className="text-xs text-gray-600">
                 Un cadre clair pour décider quoi faire de tes Ads
               </p>
+            </div>
+
+            {/* Legal links */}
+            <div className="flex items-center justify-center gap-3 text-xs text-gray-500">
+              <Link href="/cgv" className="hover:text-gray-700 hover:underline">
+                CGV
+              </Link>
+              <span>·</span>
+              <Link href="/mentions-legales" className="hover:text-gray-700 hover:underline">
+                Mentions légales
+              </Link>
             </div>
           </div>
         </div>
