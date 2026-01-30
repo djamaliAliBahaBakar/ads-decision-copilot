@@ -31,8 +31,14 @@ export async function GET(req: NextRequest) {
       process.env.NEXT_PUBLIC_APP_URL || // fallback si tu n'as pas encore APP_URL
       'http://localhost:3000'
 
-    // Call the Meta sync API (on garde l'Authorization côté interne)
-    const response = await fetch(`${baseUrl}/api/meta/sync`, {
+    // Build URL with bypass secret for Vercel Deployment Protection
+    const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
+    const syncUrl = bypassSecret
+      ? `${baseUrl}/api/meta/sync?x-vercel-protection-bypass=${bypassSecret}`
+      : `${baseUrl}/api/meta/sync`
+
+    // Call the Meta sync API
+    const response = await fetch(syncUrl, {
       method: 'POST',
       headers: {
         Authorization: expectedAuth,
