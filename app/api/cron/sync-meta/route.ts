@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { syncMetaAdsForUser } from '@/app/actions/meta'
 
 export const runtime = 'nodejs'
 
@@ -25,40 +27,54 @@ export async function GET(req: NextRequest) {
   try {
     console.log('[Cron Meta Sync] Starting daily Meta sync...')
 
-    // Base URL server-side
-    const baseUrl =
-      process.env.APP_URL ||
-      process.env.NEXT_PUBLIC_APP_URL || // fallback si tu n'as pas encore APP_URL
-      'http://localhost:3000'
-
-    // Build URL with bypass secret for Vercel Deployment Protection
-    const bypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-    const syncUrl = bypassSecret
-      ? `${baseUrl}/api/meta/sync?x-vercel-protection-bypass=${bypassSecret}`
-      : `${baseUrl}/api/meta/sync`
-
-    // Call the Meta sync API
-    const response = await fetch(syncUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: expectedAuth,
-      },
+    // Get all active Meta accounts directly (no HTTP call)
+    const metaAccounts = await prisma.metaAccount.findMany({
+      where: { isActive: true },
+      include: { user: { select: { id: true, email: true } } },
     })
 
-    if (!response.ok) {
-      throw new Error(`Meta sync API returned ${response.status}`)
+    console.log(`[Cron Meta Sync] Found ${metaAccounts.length} active Meta accounts`)
+
+    let successCount = 0
+    let errorCount = 0
+    const results = []
+
+    // Sync each account
+    for (const account of metaAccounts) {
+      try {
+        console.log(`[Cron Meta Sync] Syncing account ${account.accountName} for user ${account.user.email}`)
+        const result = await syncMetaAdsForUser(account.userId)
+        successCount++
+        results.push({
+          userId: account.userId,
+          email: account.user.email,
+          accountName: account.accountName,
+          status: 'success',
+          adsCount: result.adsCount,
+        })
+      } catch (error) {
+        errorCount++
+        console.error(`[Cron Meta Sync] Failed to sync for user ${account.user.email}:`, error)
+        results.push({
+          userId: account.userId,
+          email: account.user.email,
+          accountName: account.accountName,
+          status: 'error',
+          error: (error as Error).message,
+        })
+      }
     }
 
-    const result = await response.json()
-
-    console.log(
-      `[Cron Meta Sync] Completed: ${result.successCount}/${result.totalAccounts} accounts synced successfully`
-    )
+    console.log(`[Cron Meta Sync] Completed: ${successCount}/${metaAccounts.length} accounts synced`)
 
     return NextResponse.json({
       success: true,
       message: 'Daily Meta sync completed',
-      ...result,
+      totalAccounts: metaAccounts.length,
+      successCount,
+      errorCount,
+      results,
+      timestamp: new Date().toISOString(),
     })
   } catch (error) {
     console.error('[Cron Meta Sync] Error:', error)
