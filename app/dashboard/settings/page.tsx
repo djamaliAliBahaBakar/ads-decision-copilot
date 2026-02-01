@@ -11,6 +11,7 @@ import { CardSkeleton } from '@/components/ui/loading-skeleton'
 import { Trash2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { DigestSettings } from '@/components/digest/digest-settings'
+import { SubscriptionSettings } from '@/components/subscription/subscription-settings'
 
 interface UserRule {
   id: string
@@ -104,6 +105,9 @@ export default function SettingsPage() {
         </h1>
         <p className="text-gray-600">Configuration et intégrations de votre compte</p>
       </div>
+
+      {/* Subscription Management */}
+      <SubscriptionSettings />
 
       {/* Discipline Widget */}
       {!loading && <DisciplineWidget />}
