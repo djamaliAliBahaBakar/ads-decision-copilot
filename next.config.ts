@@ -12,7 +12,8 @@ const csp = `
     https://clerk.adsdecision.com
     https://accounts.adsdecision.com
     https://js.stripe.com
-    https://*.sentry.io;
+    https://*.sentry.io
+    https://challenges.cloudflare.com;
 
   style-src 'self' 'unsafe-inline';
 
@@ -32,12 +33,14 @@ const csp = `
     https://clerk.adsdecision.com
     https://accounts.adsdecision.com
     https://api.stripe.com
-    https://*.sentry.io;
+    https://*.sentry.io
+    https://challenges.cloudflare.com;
 
   frame-src 'self'
     https://*.clerk.com
     https://*.clerk.services
-    https://js.stripe.com;
+    https://js.stripe.com
+    https://challenges.cloudflare.com;
 
   frame-ancestors 'self';
   upgrade-insecure-requests;
