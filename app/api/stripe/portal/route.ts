@@ -4,6 +4,10 @@ import { prisma } from '@/lib/prisma'
 import { getOrCreateUser } from '@/lib/get-or-create-user'
 import Stripe from 'stripe'
 
+// Force Node.js runtime (not Edge) for Stripe SDK compatibility
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-01-28.clover' })
   : null

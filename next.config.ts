@@ -6,7 +6,7 @@ const csp = `
   form-action 'self';
   object-src 'none';
 
-  script-src 'self' 'unsafe-inline' 'unsafe-eval'
+  script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:
     https://*.clerk.com
     https://*.clerk.services
     https://clerk.adsdecision.com
@@ -14,6 +14,8 @@ const csp = `
     https://js.stripe.com
     https://*.sentry.io
     https://challenges.cloudflare.com;
+
+  worker-src 'self' blob:;
 
   style-src 'self' 'unsafe-inline';
 
