@@ -28,6 +28,7 @@ model Ad {
   userId         String
   adName         String
   campaignName   String?
+  adSetName      String?
   angle          String?
   cpl            Float
   spend          Float

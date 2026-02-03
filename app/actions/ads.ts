@@ -24,17 +24,17 @@ export async function uploadAds(csvText: string) {
   // Récupérer les données existantes pour détecter les doublons
   const existingAds = await prisma.ad.findMany({
     where: { userId: user.id },
-    select: { adName: true, date: true },
+    select: { adName: true, adSetName: true, date: true },
   })
 
-  // Créer un Set des clés existantes (adName + date)
+  // Créer un Set des clés existantes (adName + adSetName + date)
   const existingKeys = new Set(
-    existingAds.map(ad => `${ad.adName}|${ad.date.toISOString().split('T')[0]}`)
+    existingAds.map(ad => `${ad.adName}|${ad.adSetName || ''}|${ad.date.toISOString().split('T')[0]}`)
   )
 
-  // Filtrer les doublons
+  // Filtrer les doublons (même pub, même AdSet, même date = doublon)
   const newRows = result.data.filter(row => {
-    const key = `${row.ad_name}|${row.date}`
+    const key = `${row.ad_name}|${row.ad_set_name || ''}|${row.date}`
     return !existingKeys.has(key)
   })
 
@@ -52,6 +52,7 @@ export async function uploadAds(csvText: string) {
         userId: user.id,
         adName: row.ad_name,
         campaignName: row.campaign_name || 'Unknown',
+        adSetName: row.ad_set_name || null,
         angle: row.angle || 'Unknown',
         cpl: row.cpl,
         spend: row.spend,

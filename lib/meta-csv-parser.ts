@@ -8,6 +8,7 @@ import Papa from 'papaparse'
 export interface ParsedAd {
   ad_name: string
   campaign_name?: string
+  ad_set_name?: string
   angle?: string
   cpl: number
   spend: number
@@ -63,8 +64,15 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
     'Campaign Name',
     'campaign_name',
     'Campagne',
+  ],
+  ad_set_name: [
     "Nom de l'ensemble de publicités",
     "Nom de lâensemble de publicitÃ©s",
+    "Nom de l'ensemble de publicités",
+    'Ad Set Name',
+    'Ad set name',
+    'ad_set_name',
+    'Ensemble de publicités',
   ],
   spend: [
     'Montant dépensé (EUR)',
@@ -416,6 +424,9 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
         ad_name: adName,
         campaign_name: columnMapping.campaign_name !== undefined
           ? values[columnMapping.campaign_name]?.toString().trim()
+          : undefined,
+        ad_set_name: columnMapping.ad_set_name !== undefined
+          ? values[columnMapping.ad_set_name]?.toString().trim()
           : undefined,
         spend,
         leads,

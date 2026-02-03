@@ -4,6 +4,7 @@ import { parseMetaCSV, formatMappingPreview } from './meta-csv-parser'
 export interface AdRow {
   ad_name: string
   campaign_name?: string
+  ad_set_name?: string
   angle?: string
   cpl: number
   spend: number
