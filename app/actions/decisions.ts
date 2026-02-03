@@ -28,66 +28,110 @@ export async function getDecisionSuggestions() {
     orderBy: { date: 'desc' },
   })
 
-  const adsMap = new Map()
+  // Grouper par nom de pub
+  const adsMap = new Map<string, typeof ads>()
   ads.forEach(ad => {
     const key = ad.adName
     if (!adsMap.has(key)) {
-      adsMap.set(key, ad)
+      adsMap.set(key, [])
     }
+    adsMap.get(key)!.push(ad)
   })
 
-  const suggestions = Array.from(adsMap.values()).map(ad => {
-    const adAds = ads.filter(a => a.adName === ad.adName)
+  // Détecter si données agrégées (1 ligne par pub = agrégé)
+  const uniqueAdsCount = adsMap.size
+  const totalLines = ads.length
+  const isAggregatedData = uniqueAdsCount === totalLines
+
+  // Calculer le CPL moyen global (pour comparaison relative)
+  const totalSpend = ads.reduce((sum, a) => sum + a.spend, 0)
+  const totalLeads = ads.reduce((sum, a) => sum + a.leads, 0)
+  const avgCplGlobal = totalLeads > 0 ? totalSpend / totalLeads : 0
+
+  const suggestions = Array.from(adsMap.entries()).map(([, adAds]) => {
+    const ad = adAds[0] // La plus récente (triée par date desc)
     const daysRunning = adAds.length
 
-    const last3Days = adAds.slice(0, 3)
-    const prev3Days = adAds.slice(3, 6)
+    // Calculer le CPL de cette pub
+    const adTotalSpend = adAds.reduce((sum, a) => sum + a.spend, 0)
+    const adTotalLeads = adAds.reduce((sum, a) => sum + a.leads, 0)
+    const adCpl = adTotalLeads > 0 ? adTotalSpend / adTotalLeads : ad.cpl
 
-    const last3Cpl =
-      last3Days.length > 0
-        ? last3Days.reduce((sum, a) => sum + a.spend, 0) /
-          last3Days.reduce((sum, a) => sum + a.leads, 0)
-        : ad.cpl
+    // Tendance CPL (seulement si données quotidiennes)
+    let cplTrend3d = 0
+    if (!isAggregatedData && adAds.length >= 3) {
+      const last3Days = adAds.slice(0, 3)
+      const prev3Days = adAds.slice(3, 6)
 
-    const prev3Cpl =
-      prev3Days.length > 0
+      const last3Cpl = last3Days.reduce((sum, a) => sum + a.spend, 0) /
+        Math.max(1, last3Days.reduce((sum, a) => sum + a.leads, 0))
+
+      const prev3Cpl = prev3Days.length > 0
         ? prev3Days.reduce((sum, a) => sum + a.spend, 0) /
-          prev3Days.reduce((sum, a) => sum + a.leads, 0)
+          Math.max(1, prev3Days.reduce((sum, a) => sum + a.leads, 0))
         : last3Cpl
 
-    const cplTrend3d = ((last3Cpl - prev3Cpl) / prev3Cpl) * 100
+      cplTrend3d = prev3Cpl > 0 ? ((last3Cpl - prev3Cpl) / prev3Cpl) * 100 : 0
+    }
 
     let action: 'KILL' | 'SCALE' | 'HOLD' | 'REVIEW' = 'REVIEW'
     let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW'
-    let reason = 'No rule matched'
+    let reason = 'À analyser'
 
+    // === RÈGLES UTILISATEUR ===
     rules.forEach(rule => {
-      if (rule.ruleType === 'kill_if_cpl' && last3Cpl > rule.threshold && daysRunning >= rule.days) {
+      // Pour données agrégées : ignorer la condition "days"
+      const meetsMinDays = isAggregatedData ? true : daysRunning >= rule.days
+
+      if (rule.ruleType === 'kill_if_cpl' && adCpl > rule.threshold && meetsMinDays) {
         action = 'KILL'
         confidence = 'HIGH'
-        reason = `CPL €${last3Cpl.toFixed(2)} > €${rule.threshold} pendant ${daysRunning}j`
+        reason = `CPL €${adCpl.toFixed(2)} > seuil €${rule.threshold}`
       }
 
-      if (rule.ruleType === 'scale_if_roas' && ad.roas && ad.roas > rule.threshold && daysRunning >= rule.days) {
+      if (rule.ruleType === 'scale_if_roas' && ad.roas && ad.roas > rule.threshold && meetsMinDays) {
         action = 'SCALE'
         confidence = 'MEDIUM'
         reason = `ROAS ${ad.roas.toFixed(2)}x > ${rule.threshold}x`
       }
     })
 
+    // === RÈGLES PAR DÉFAUT (si aucune règle utilisateur n'a matché) ===
     if (action === 'REVIEW') {
-      if (cplTrend3d > 40 && daysRunning >= 3) {
-        action = 'KILL'
-        confidence = 'HIGH'
-        reason = `CPL +${cplTrend3d.toFixed(1)}% en 3j`
-      } else if (ad.roas && ad.roas > 3 && cplTrend3d < 10) {
-        action = 'SCALE'
-        confidence = 'MEDIUM'
-        reason = `ROAS ${ad.roas.toFixed(2)}x stable`
-      } else if (daysRunning < 3) {
-        action = 'HOLD'
-        confidence = 'LOW'
-        reason = 'Phase learning (<3j)'
+      if (isAggregatedData) {
+        // Mode agrégé : comparer au CPL moyen global
+        const cplRatio = avgCplGlobal > 0 ? adCpl / avgCplGlobal : 1
+
+        if (cplRatio > 1.5) {
+          // CPL 50% plus élevé que la moyenne
+          action = 'KILL'
+          confidence = 'HIGH'
+          reason = `CPL €${adCpl.toFixed(2)} = ${Math.round(cplRatio * 100)}% de la moyenne (€${avgCplGlobal.toFixed(2)})`
+        } else if (cplRatio < 0.7 && adTotalLeads >= 5) {
+          // CPL 30% moins cher que la moyenne + volume suffisant
+          action = 'SCALE'
+          confidence = 'MEDIUM'
+          reason = `CPL €${adCpl.toFixed(2)} = meilleur que la moyenne (€${avgCplGlobal.toFixed(2)})`
+        } else {
+          action = 'HOLD'
+          confidence = 'LOW'
+          reason = `CPL €${adCpl.toFixed(2)} proche de la moyenne`
+        }
+      } else {
+        // Mode quotidien : utiliser les tendances
+        if (cplTrend3d > 40 && daysRunning >= 3) {
+          action = 'KILL'
+          confidence = 'HIGH'
+          reason = `CPL +${cplTrend3d.toFixed(1)}% en 3j`
+        } else if (ad.roas && ad.roas > 3 && cplTrend3d < 10) {
+          action = 'SCALE'
+          confidence = 'MEDIUM'
+          reason = `ROAS ${ad.roas.toFixed(2)}x stable`
+        } else if (daysRunning < 3) {
+          action = 'HOLD'
+          confidence = 'LOW'
+          reason = 'Phase learning (<3j)'
+        }
       }
     }
 
@@ -96,14 +140,15 @@ export async function getDecisionSuggestions() {
       adName: ad.adName,
       campaignName: ad.campaignName,
       angle: ad.angle,
-      cpl: last3Cpl,
-      spend: ad.spend,
-      leads: ad.leads,
+      cpl: adCpl,
+      spend: adTotalSpend,
+      leads: adTotalLeads,
       cplTrend3d,
-      daysRunning,
+      daysRunning: isAggregatedData ? null : daysRunning, // null = données agrégées
       action,
       confidence,
       reason,
+      isAggregatedData,
     }
   })
 
