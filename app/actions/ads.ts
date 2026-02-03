@@ -21,42 +21,74 @@ export async function uploadAds(csvText: string) {
     throw new Error(errorMsg)
   }
 
-  // Compter les pubs uniques
-  const uniqueAdNames = new Set(result.data.map(row => row.ad_name))
-  const uniqueAdsCount = uniqueAdNames.size
+  // Récupérer les données existantes pour détecter les doublons
+  const existingAds = await prisma.ad.findMany({
+    where: { userId: user.id },
+    select: { adName: true, date: true },
+  })
 
-  // Insert all ads
-  const ads = await Promise.all(
-    result.data.map(row =>
-      prisma.ad.create({
-        data: {
-          userId: user.id,
-          adName: row.ad_name,
-          campaignName: row.campaign_name || 'Unknown',
-          angle: row.angle || 'Unknown',
-          cpl: row.cpl,
-          spend: row.spend,
-          leads: row.leads,
-          ctr: row.ctr || null,
-          roas: row.roas || null,
-          date: new Date(row.date),
-        },
-      })
-    )
+  // Créer un Set des clés existantes (adName + date)
+  const existingKeys = new Set(
+    existingAds.map(ad => `${ad.adName}|${ad.date.toISOString().split('T')[0]}`)
   )
 
-  // Warning si une seule pub
+  // Filtrer les doublons
+  const newRows = result.data.filter(row => {
+    const key = `${row.ad_name}|${row.date}`
+    return !existingKeys.has(key)
+  })
+
+  const duplicatesCount = result.data.length - newRows.length
+
+  // Compter les pubs uniques (dans les nouvelles données)
+  const uniqueAdNames = new Set(newRows.map(row => row.ad_name))
+  const uniqueAdsCount = uniqueAdNames.size
+
+  // Insert seulement les nouvelles ads
+  let createdCount = 0
+  if (newRows.length > 0) {
+    await prisma.ad.createMany({
+      data: newRows.map(row => ({
+        userId: user.id,
+        adName: row.ad_name,
+        campaignName: row.campaign_name || 'Unknown',
+        angle: row.angle || 'Unknown',
+        cpl: row.cpl,
+        spend: row.spend,
+        leads: row.leads,
+        ctr: row.ctr || null,
+        roas: row.roas || null,
+        date: new Date(row.date),
+      })),
+    })
+    createdCount = newRows.length
+  }
+
+  // Warnings
   const warnings: string[] = []
-  if (uniqueAdsCount === 1) {
+
+  if (duplicatesCount > 0) {
     warnings.push(
-      '⚠️ Une seule pub détectée. AdsDecision est plus utile avec plusieurs pubs à comparer. ' +
-      'Ajoutez plus de pubs pour identifier vos meilleurs angles créatifs.'
+      `ℹ️ ${duplicatesCount} ligne(s) ignorée(s) (déjà importées).`
+    )
+  }
+
+  if (duplicatesCount === result.data.length) {
+    warnings.push(
+      '⚠️ Toutes les données étaient déjà présentes. Rien de nouveau importé.'
+    )
+  }
+
+  if (uniqueAdsCount === 1 && createdCount > 0) {
+    warnings.push(
+      '⚠️ Une seule pub détectée. AdsDecision est plus utile avec plusieurs pubs à comparer.'
     )
   }
 
   return {
     success: true,
-    count: ads.length,
+    count: createdCount,
+    duplicatesIgnored: duplicatesCount,
     uniqueAdsCount,
     warnings,
   }

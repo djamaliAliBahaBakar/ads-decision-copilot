@@ -15,6 +15,11 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null)
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null)
   const [mappedColumns, setMappedColumns] = useState<Record<string, string> | null>(null)
+  const [uploadResult, setUploadResult] = useState<{
+    count: number
+    duplicatesIgnored: number
+    warnings: string[]
+  } | null>(null)
   const router = useRouter()
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -60,15 +65,15 @@ export default function UploadPage() {
 
     setLoading(true)
     setError(null)
+    setUploadResult(null)
     try {
       const text = await file.text()
-      await uploadAds(text)
+      const result = await uploadAds(text)
+      setUploadResult(result)
       setFile(null)
       setPreview([])
       setDetectedFormat(null)
       setMappedColumns(null)
-      router.push('/dashboard')
-      router.refresh()
     } catch (err: any) {
       console.error('Upload error:', err)
       setError(err.message || 'Erreur lors de l\'upload')
@@ -86,21 +91,56 @@ export default function UploadPage() {
         <p className="text-gray-600">Importez vos données Meta Ads pour analyse</p>
       </div>
 
-      {/* Instructions Meta Ads Manager */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <p className="font-semibold text-blue-900 mb-2">📊 Comment exporter depuis Meta Ads Manager :</p>
-        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-          <li>Aller dans Meta Ads Manager → sélectionner votre compte</li>
-          <li><strong>Important :</strong> Se positionner au niveau <strong>"Publicités"</strong> (pas Campagnes, pas Ensembles)</li>
-          <li>Sélectionner la période souhaitée</li>
-          <li>Cliquer sur "Exporter" → "Exporter les données du tableau"</li>
-        </ol>
-        <p className="text-xs text-blue-600 mt-2">
-          💡 Astuce : Ajoutez la colonne "Nom de la campagne" pour un meilleur suivi
-        </p>
-      </Card>
+      {/* Résultat de l'upload */}
+      {uploadResult && (
+        <Card className="p-6 bg-green-50 border-green-200">
+          <div className="flex items-center gap-3 mb-4">
+            <CheckCircle2 className="w-8 h-8 text-green-600" />
+            <div>
+              <h3 className="text-xl font-bold text-green-900">Import terminé</h3>
+              <p className="text-sm text-green-700">
+                {uploadResult.count} ligne(s) importée(s)
+                {uploadResult.duplicatesIgnored > 0 && (
+                  <span> • {uploadResult.duplicatesIgnored} doublon(s) ignoré(s)</span>
+                )}
+              </p>
+            </div>
+          </div>
 
-      <Card className="p-6">
+          {uploadResult.warnings.length > 0 && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              {uploadResult.warnings.map((warning, idx) => (
+                <p key={idx} className="text-sm text-amber-800">{warning}</p>
+              ))}
+            </div>
+          )}
+
+          <Button
+            onClick={() => router.push('/dashboard')}
+            className="w-full"
+          >
+            Voir le dashboard
+          </Button>
+        </Card>
+      )}
+
+      {/* Instructions Meta Ads Manager */}
+      {!uploadResult && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <p className="font-semibold text-blue-900 mb-2">📊 Comment exporter depuis Meta Ads Manager :</p>
+          <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+            <li>Aller dans Meta Ads Manager → sélectionner votre compte</li>
+            <li><strong>Important :</strong> Se positionner au niveau <strong>"Publicités"</strong> (pas Campagnes, pas Ensembles)</li>
+            <li>Sélectionner la période souhaitée</li>
+            <li>Cliquer sur "Exporter" → "Exporter les données du tableau"</li>
+          </ol>
+          <p className="text-xs text-blue-600 mt-2">
+            💡 Astuce : Ajoutez la colonne "Nom de la campagne" pour un meilleur suivi
+          </p>
+        </Card>
+      )}
+
+      {!uploadResult && <Card className="p-6">
         <div className={`
           border-2 border-dashed rounded-lg p-12 text-center transition-all
           ${file && !error ? 'border-green-400 bg-green-50' : error ? 'border-red-400 bg-red-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50/30'}
@@ -164,7 +204,7 @@ export default function UploadPage() {
             )}
           </label>
         </div>
-      </Card>
+      </Card>}
 
       {/* Mapping détecté pour les exports Meta */}
       {mappedColumns && Object.keys(mappedColumns).length > 0 && detectedFormat !== 'adsdecision' && !error && (
