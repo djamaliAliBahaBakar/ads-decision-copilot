@@ -41,17 +41,29 @@ export async function POST(req: NextRequest) {
 
     // Calculer les stats pour l'écran de vérification
     const uniqueCampaigns = new Set(adsToCreate.map(a => a.campaignName).filter(Boolean))
+    const uniqueAds = new Set(adsToCreate.map(a => a.adName))
     const minDate = new Date(Math.min(...adsToCreate.map(a => a.date.getTime())))
     const maxDate = new Date(Math.max(...adsToCreate.map(a => a.date.getTime())))
+
+    // Warnings
+    const warnings: string[] = []
+    if (uniqueAds.size === 1) {
+      warnings.push(
+        '⚠️ Une seule pub détectée. AdsDecision compare vos pubs entre elles pour identifier les meilleures. ' +
+        'Ajoutez plus de pubs pour profiter pleinement de l\'outil.'
+      )
+    }
 
     const stats = {
       count: adsToCreate.length,
       campaignsCount: uniqueCampaigns.size,
+      uniqueAdsCount: uniqueAds.size,
       minDate: minDate.toISOString().split('T')[0], // Format YYYY-MM-DD
       maxDate: maxDate.toISOString().split('T')[0],
       totalSpend: adsToCreate.reduce((sum, a) => sum + a.spend, 0),
       totalLeads: adsToCreate.reduce((sum, a) => sum + a.leads, 0),
       avgCpl: adsToCreate.reduce((sum, a) => sum + a.cpl, 0) / adsToCreate.length,
+      warnings,
     }
 
     return NextResponse.json(stats)

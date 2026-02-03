@@ -110,9 +110,12 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
     'Date',
     'Jour',
     'Day',
+    'Fin des rapports',        // Priorité à la date de fin pour données agrégées
+    'Fin des rapports',
     'Début des rapports',
     'DÃ©but des rapports',
     'Reporting starts',
+    'Reporting ends',
   ],
   impressions: [
     'Impressions',

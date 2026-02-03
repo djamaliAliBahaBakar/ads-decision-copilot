@@ -123,6 +123,11 @@ export default function OnboardingStep1({ onComplete }: Step1Props) {
       setUploadStats(apiResult)
       setParsedData(result.data) // Stocker les données parsées pour l'analyse des angles
 
+      // Fusionner les warnings du parsing + ceux de l'API (ex: une seule pub)
+      if (apiResult.warnings && apiResult.warnings.length > 0) {
+        setWarnings(prev => [...prev, ...apiResult.warnings])
+      }
+
       // Ne pas passer automatiquement au step suivant
       // L'utilisateur doit confirmer en cliquant sur "C'est correct"
 

@@ -21,6 +21,10 @@ export async function uploadAds(csvText: string) {
     throw new Error(errorMsg)
   }
 
+  // Compter les pubs uniques
+  const uniqueAdNames = new Set(result.data.map(row => row.ad_name))
+  const uniqueAdsCount = uniqueAdNames.size
+
   // Insert all ads
   const ads = await Promise.all(
     result.data.map(row =>
@@ -41,9 +45,20 @@ export async function uploadAds(csvText: string) {
     )
   )
 
+  // Warning si une seule pub
+  const warnings: string[] = []
+  if (uniqueAdsCount === 1) {
+    warnings.push(
+      '⚠️ Une seule pub détectée. AdsDecision est plus utile avec plusieurs pubs à comparer. ' +
+      'Ajoutez plus de pubs pour identifier vos meilleurs angles créatifs.'
+    )
+  }
+
   return {
     success: true,
     count: ads.length,
+    uniqueAdsCount,
+    warnings,
   }
 }
 
@@ -53,14 +68,10 @@ export async function getWeekData() {
     throw new Error('User not found')
   }
 
-  // Get last 7 days
-  const sevenDaysAgo = new Date()
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-
+  // Récupérer TOUTES les données (supporte les imports agrégés)
   const ads = await prisma.ad.findMany({
     where: {
       userId: user.id,
-      date: { gte: sevenDaysAgo },
     },
     orderBy: { date: 'desc' },
   })
@@ -141,15 +152,12 @@ export async function getAnglesPerformance() {
     throw new Error('User not found')
   }
 
-  // Get last 14 days of data
-  const fourteenDaysAgo = new Date()
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-
+  // Récupérer TOUTES les données de l'utilisateur (supporte les imports agrégés)
   const ads = await prisma.ad.findMany({
     where: {
       userId: user.id,
-      date: { gte: fourteenDaysAgo },
     },
+    orderBy: { date: 'desc' },
   })
 
   if (ads.length === 0) {

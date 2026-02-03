@@ -20,13 +20,10 @@ export async function getDecisionSuggestions() {
     where: { userId: user.id, isActive: true },
   })
 
-  const fourteenDaysAgo = new Date()
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-
+  // Récupérer TOUTES les données (supporte les imports agrégés)
   const ads = await prisma.ad.findMany({
     where: {
       userId: user.id,
-      date: { gte: fourteenDaysAgo },
     },
     orderBy: { date: 'desc' },
   })
@@ -305,13 +302,9 @@ export async function getRealizedSavings() {
   }, 0)
 
   // Get potential savings from ads not yet decided (danger status)
-  const fourteenDaysAgo = new Date()
-  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
-
   const ads = await prisma.ad.findMany({
     where: {
       userId: user.id,
-      date: { gte: fourteenDaysAgo },
     },
   })
 
