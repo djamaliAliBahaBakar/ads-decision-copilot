@@ -67,12 +67,14 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
   ],
   ad_set_name: [
     "Nom de l'ensemble de publicités",
-    "Nom de lâensemble de publicitÃ©s",
     "Nom de l'ensemble de publicités",
     'Ad Set Name',
     'Ad set name',
     'ad_set_name',
     'Ensemble de publicités',
+    // Encodings cassés courants - utiliser des patterns partiels
+    'ensemble de publicit',
+    'ad set',
   ],
   spend: [
     'Montant dépensé (EUR)',
@@ -191,6 +193,29 @@ function cleanContent(content: string): string {
 }
 
 /**
+ * Normalise une chaîne pour la comparaison (enlève les accents et caractères spéciaux)
+ */
+function normalizeForComparison(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Enlever les accents
+    .replace(/[âãäåàá]/g, 'a')
+    .replace(/[êëèé]/g, 'e')
+    .replace(/[îïìí]/g, 'i')
+    .replace(/[ôõöòó]/g, 'o')
+    .replace(/[ûüùú]/g, 'u')
+    .replace(/[''`´]/g, "'")
+    .replace(/[""]/g, '"')
+    // Gérer les encodages cassés courants
+    .replace(/ã©/g, 'e')
+    .replace(/ã¨/g, 'e')
+    .replace(/ã /g, 'a')
+    .replace(/ã¢/g, 'a')
+    .replace(/â/g, "'")
+}
+
+/**
  * Trouve le mapping des colonnes
  */
 function findColumnMapping(headers: string[]): Record<string, number> {
@@ -199,9 +224,15 @@ function findColumnMapping(headers: string[]): Record<string, number> {
   for (const [targetField, possibleNames] of Object.entries(COLUMN_MAPPINGS)) {
     for (let i = 0; i < headers.length; i++) {
       const header = headers[i]?.trim().toLowerCase() || ''
+      const normalizedHeader = normalizeForComparison(header)
 
       for (const possibleName of possibleNames) {
-        if (header === possibleName.toLowerCase() || header.includes(possibleName.toLowerCase())) {
+        const normalizedName = normalizeForComparison(possibleName)
+        if (
+          header === possibleName.toLowerCase() ||
+          header.includes(possibleName.toLowerCase()) ||
+          normalizedHeader.includes(normalizedName)
+        ) {
           mapping[targetField] = i
           break
         }
