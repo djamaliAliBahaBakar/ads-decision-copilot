@@ -12,16 +12,17 @@ import { Zap, TrendingUp, Mail, Target, ChevronRight } from 'lucide-react'
 interface Suggestion {
   id: string
   adName: string
-  campaignName: string
-  angle: string
+  campaignName: string | null
+  angle: string | null
   cpl: number
   spend: number
   leads: number
   cplTrend3d: number
-  daysRunning: number
+  daysRunning: number | null
   action: 'KILL' | 'SCALE' | 'HOLD' | 'REVIEW'
   confidence: 'HIGH' | 'MEDIUM' | 'LOW'
   reason: string
+  isAggregatedData?: boolean
 }
 
 interface DecisionRecord {
