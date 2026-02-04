@@ -104,13 +104,13 @@ export async function getDecisionSuggestions() {
       if (rule.ruleType === 'kill_if_cpl' && adCpl > rule.threshold && meetsMinDays) {
         action = 'KILL'
         confidence = 'HIGH'
-        reason = `CPL €${adCpl.toFixed(2)} > seuil €${rule.threshold}`
+        reason = `Ta règle: CPL > €${rule.threshold} → Kill. Ici CPL = €${adCpl.toFixed(2)}.`
       }
 
       if (rule.ruleType === 'scale_if_roas' && ad.roas && ad.roas > rule.threshold && meetsMinDays) {
         action = 'SCALE'
         confidence = 'MEDIUM'
-        reason = `ROAS ${ad.roas.toFixed(2)}x > ${rule.threshold}x`
+        reason = `Ta règle: ROAS > ${rule.threshold}x → Scale. Ici ROAS = ${ad.roas.toFixed(2)}x.`
       }
     })
 
@@ -126,45 +126,47 @@ export async function getDecisionSuggestions() {
       if (isAggregatedData) {
         // Mode agrégé : comparer au CPL moyen global
         const cplRatio = avgCplGlobal > 0 ? adCpl / avgCplGlobal : 1
+        const cplMultiplier = Math.round(cplRatio * 10) / 10 // 1.5, 2.3, etc.
 
-        if (cplRatio > 1.5 && adTotalLeads >= 3) {
-          // CPL 50% plus élevé que la moyenne
-          action = 'KILL'
-          confidence = getConfidenceFromLeads(adTotalLeads)
-          reason = `CPL €${adCpl.toFixed(2)} = ${Math.round(cplRatio * 100)}% de la moyenne (€${avgCplGlobal.toFixed(2)})`
-        } else if (cplRatio < 0.7 && adTotalLeads >= 5) {
-          // CPL 30% moins cher que la moyenne + volume suffisant
-          action = 'SCALE'
-          confidence = getConfidenceFromLeads(adTotalLeads)
-          reason = `CPL €${adCpl.toFixed(2)} = meilleur que la moyenne (€${avgCplGlobal.toFixed(2)})`
-        } else if (adTotalLeads === 0 && adTotalSpend > 20) {
-          // Pas de leads mais dépenses significatives
+        if (adTotalLeads === 0 && adTotalSpend > 20) {
+          // Cas prioritaire: Pas de leads mais dépenses significatives
           action = 'KILL'
           confidence = 'MEDIUM'
-          reason = `€${adTotalSpend.toFixed(0)} dépensés, 0 leads`
+          reason = `€${adTotalSpend.toFixed(0)} dépensés → 0 lead. Budget gaspillé.`
+        } else if (cplRatio > 1.5 && adTotalLeads >= 3) {
+          // CPL trop élevé par rapport à la moyenne
+          action = 'KILL'
+          confidence = getConfidenceFromLeads(adTotalLeads)
+          reason = `CPL ${cplMultiplier}x plus cher que la moyenne (€${avgCplGlobal.toFixed(2)}). Tu paies €${(adCpl - avgCplGlobal).toFixed(2)} de trop par lead.`
+        } else if (cplRatio < 0.7 && adTotalLeads >= 5) {
+          // CPL excellent - opportunité à exploiter
+          action = 'SCALE'
+          confidence = getConfidenceFromLeads(adTotalLeads)
+          const savings = ((1 - cplRatio) * 100).toFixed(0)
+          reason = `CPL €${adCpl.toFixed(2)} = ${savings}% moins cher que la moyenne. Ta meilleure pub!`
         } else if (adTotalLeads < 3) {
           action = 'HOLD'
           confidence = 'LOW'
-          reason = `Données insuffisantes (${adTotalLeads} leads)`
+          reason = `Seulement ${adTotalLeads} lead${adTotalLeads > 1 ? 's' : ''}. Attends plus de conversions pour décider.`
         } else {
           action = 'HOLD'
           confidence = getConfidenceFromLeads(adTotalLeads)
-          reason = `CPL €${adCpl.toFixed(2)} dans la moyenne`
+          reason = `CPL €${adCpl.toFixed(2)} proche de la moyenne (€${avgCplGlobal.toFixed(2)}). Surveille l'évolution.`
         }
       } else {
         // Mode quotidien : utiliser les tendances
         if (cplTrend3d > 40 && daysRunning >= 3) {
           action = 'KILL'
           confidence = getConfidenceFromLeads(adTotalLeads)
-          reason = `CPL +${cplTrend3d.toFixed(1)}% en 3j`
+          reason = `CPL en hausse de +${cplTrend3d.toFixed(0)}% sur 3 jours. Performance en chute.`
         } else if (ad.roas && ad.roas > 3 && cplTrend3d < 10) {
           action = 'SCALE'
           confidence = getConfidenceFromLeads(adTotalLeads)
-          reason = `ROAS ${ad.roas.toFixed(2)}x stable`
+          reason = `ROAS ${ad.roas.toFixed(1)}x stable. Pub rentable à pousser!`
         } else if (daysRunning < 3) {
           action = 'HOLD'
           confidence = 'LOW'
-          reason = 'Phase learning (<3j)'
+          reason = `Pub trop récente (${daysRunning}j). Attends 3 jours minimum pour décider.`
         }
       }
     }
