@@ -28,20 +28,39 @@ export async function getDecisionSuggestions() {
     orderBy: { date: 'desc' },
   })
 
-  // Grouper par nom de pub
+  // Grouper par metaAdId si disponible, sinon par nom de pub
   const adsMap = new Map<string, typeof ads>()
   ads.forEach(ad => {
-    const key = ad.adName
+    // Utiliser metaAdId comme clé primaire (unique par pub Meta)
+    // Sinon fallback sur adName
+    const key = ad.metaAdId || ad.adName
     if (!adsMap.has(key)) {
       adsMap.set(key, [])
     }
     adsMap.get(key)!.push(ad)
   })
 
-  // Détecter si données agrégées (1 ligne par pub = agrégé)
+  // Détecter si données agrégées :
+  // - Peu d'entrées par pub (≤3) mais période longue OU
+  // - Dates identiques pour toutes les entrées d'une même pub
   const uniqueAdsCount = adsMap.size
   const totalLines = ads.length
-  const isAggregatedData = uniqueAdsCount === totalLines
+  const avgEntriesPerAd = totalLines / uniqueAdsCount
+
+  // Vérifier si les dates sont espacées (données quotidiennes) ou groupées (données agrégées)
+  let isAggregatedData = false
+  if (avgEntriesPerAd <= 3) {
+    // Peu d'entrées = probablement agrégé
+    isAggregatedData = true
+  } else {
+    // Vérifier l'espacement des dates
+    const sortedDates = ads.map(a => a.date.getTime()).sort((a, b) => a - b)
+    if (sortedDates.length >= 2) {
+      const daysBetween = (sortedDates[sortedDates.length - 1] - sortedDates[0]) / (1000 * 60 * 60 * 24)
+      // Si la période couvre plus de jours que le nombre d'entrées * 2, c'est probablement agrégé
+      isAggregatedData = daysBetween > totalLines * 2
+    }
+  }
 
   // Calculer le CPL moyen global (pour comparaison relative)
   const totalSpend = ads.reduce((sum, a) => sum + a.spend, 0)
@@ -98,34 +117,50 @@ export async function getDecisionSuggestions() {
 
     // === RÈGLES PAR DÉFAUT (si aucune règle utilisateur n'a matché) ===
     if (action === 'REVIEW') {
+      // Calcul de la confiance basée sur le volume de données
+      const getConfidenceFromLeads = (leads: number): 'HIGH' | 'MEDIUM' | 'LOW' => {
+        if (leads >= 20) return 'HIGH'
+        if (leads >= 5) return 'MEDIUM'
+        return 'LOW'
+      }
+
       if (isAggregatedData) {
         // Mode agrégé : comparer au CPL moyen global
         const cplRatio = avgCplGlobal > 0 ? adCpl / avgCplGlobal : 1
 
-        if (cplRatio > 1.5) {
+        if (cplRatio > 1.5 && adTotalLeads >= 3) {
           // CPL 50% plus élevé que la moyenne
           action = 'KILL'
-          confidence = 'HIGH'
+          confidence = getConfidenceFromLeads(adTotalLeads)
           reason = `CPL €${adCpl.toFixed(2)} = ${Math.round(cplRatio * 100)}% de la moyenne (€${avgCplGlobal.toFixed(2)})`
         } else if (cplRatio < 0.7 && adTotalLeads >= 5) {
           // CPL 30% moins cher que la moyenne + volume suffisant
           action = 'SCALE'
-          confidence = 'MEDIUM'
+          confidence = getConfidenceFromLeads(adTotalLeads)
           reason = `CPL €${adCpl.toFixed(2)} = meilleur que la moyenne (€${avgCplGlobal.toFixed(2)})`
-        } else {
+        } else if (adTotalLeads === 0 && adTotalSpend > 20) {
+          // Pas de leads mais dépenses significatives
+          action = 'KILL'
+          confidence = 'MEDIUM'
+          reason = `€${adTotalSpend.toFixed(0)} dépensés, 0 leads`
+        } else if (adTotalLeads < 3) {
           action = 'HOLD'
           confidence = 'LOW'
-          reason = `CPL €${adCpl.toFixed(2)} proche de la moyenne`
+          reason = `Données insuffisantes (${adTotalLeads} leads)`
+        } else {
+          action = 'HOLD'
+          confidence = getConfidenceFromLeads(adTotalLeads)
+          reason = `CPL €${adCpl.toFixed(2)} dans la moyenne`
         }
       } else {
         // Mode quotidien : utiliser les tendances
         if (cplTrend3d > 40 && daysRunning >= 3) {
           action = 'KILL'
-          confidence = 'HIGH'
+          confidence = getConfidenceFromLeads(adTotalLeads)
           reason = `CPL +${cplTrend3d.toFixed(1)}% en 3j`
         } else if (ad.roas && ad.roas > 3 && cplTrend3d < 10) {
           action = 'SCALE'
-          confidence = 'MEDIUM'
+          confidence = getConfidenceFromLeads(adTotalLeads)
           reason = `ROAS ${ad.roas.toFixed(2)}x stable`
         } else if (daysRunning < 3) {
           action = 'HOLD'
