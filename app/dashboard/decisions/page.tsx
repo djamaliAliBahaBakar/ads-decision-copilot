@@ -257,7 +257,9 @@ export default function DecisionsPage() {
                         {isDecided && <span className="ml-2 text-xs text-gray-500">✅</span>}
                       </div>
                     </td>
-                    <td className="p-2 text-right font-medium">€{ad.cpl.toFixed(2)}</td>
+                    <td className="p-2 text-right font-medium">
+                      {ad.leads > 0 ? `€${ad.cpl.toFixed(2)}` : '—'}
+                    </td>
                     <td className="p-2 text-right">{ad.leads}</td>
                     <td className="p-2 text-right text-gray-600">€{ad.spend.toFixed(0)}</td>
                     <td className="p-2 text-center">

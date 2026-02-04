@@ -143,9 +143,12 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
     // Français
     'Montant dépensé (EUR)',
     'Montant dÃ©pensÃ© (EUR)',
+    'Montant dépensé',
+    'Montant dÃ©pensÃ©',
     'Dépenses',
     // English
     'Amount Spent (EUR)',
+    'Amount Spent',
     'Amount spent',
     'spend',
     // Deutsch
@@ -156,8 +159,7 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
     'Importo speso',
     // Português
     'Valor gasto',
-    // Generic
-    'Budget',
+    // NOTE: "Budget" retiré car il matche "Budget des ensembles de publicités" (budget quotidien, pas le spend réel)
   ],
   leads: [
     // Français
@@ -552,6 +554,16 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
     return { data, errors, warnings, detectedFormat, mappedColumns }
   }
 
+  // Debug: log les premières valeurs pour vérifier le parsing
+  if (rows.length > 0 && columnMapping.spend) {
+    const firstRow = rows[0] as Record<string, any>
+    const spendColName = columnMapping.spend
+    const rawValue = firstRow[spendColName]
+    console.log(`[CSV Parser Debug] Colonne spend: "${spendColName}"`)
+    console.log(`[CSV Parser Debug] Première valeur brute: "${rawValue}"`)
+    console.log(`[CSV Parser Debug] Parsée: ${parseNumber(rawValue)}`)
+  }
+
   // Convertir les données - utiliser les noms de colonnes directement
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i] as Record<string, any>
@@ -565,7 +577,8 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
         continue
       }
 
-      const spend = parseNumber(columnMapping.spend ? row[columnMapping.spend] : 0)
+      const spendRaw = columnMapping.spend ? row[columnMapping.spend] : 0
+      const spend = parseNumber(spendRaw)
       let leads = columnMapping.leads ? parseNumber(row[columnMapping.leads]) : 0
       let cpl = columnMapping.cpl ? parseNumber(row[columnMapping.cpl]) : 0
 
@@ -598,7 +611,7 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
           : undefined,
         spend,
         leads,
-        cpl: cpl || (spend / Math.max(leads, 1)),
+        cpl: leads > 0 ? (cpl || spend / leads) : 0,
         date: parseDate(columnMapping.date ? row[columnMapping.date] : null),
       }
 

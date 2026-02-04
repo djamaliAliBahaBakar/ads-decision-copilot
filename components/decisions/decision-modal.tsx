@@ -60,13 +60,15 @@ export function DecisionModal({ ad, onSave, onClose }: DecisionModalProps) {
 
           {/* Reason */}
           <div>
-            <label className="block text-sm font-medium mb-2">Raison</label>
+            <label className="block text-sm font-medium mb-2">
+              Raison <span className="text-red-500">*</span>
+            </label>
             <select
               value={reason}
               onChange={e => setReason(e.target.value)}
-              className="w-full border rounded px-3 py-2"
+              className={`w-full border rounded px-3 py-2 ${!reason ? 'border-red-300' : ''}`}
             >
-              <option value="">-- Sélectionne --</option>
+              <option value="">-- Sélectionne une raison --</option>
               <option value="FATIGUE">Fatigue audience</option>
               <option value="CPA_UP">CPA trop haut</option>
               <option value="CTR_DOWN">CTR en baisse</option>
@@ -74,6 +76,9 @@ export function DecisionModal({ ad, onSave, onClose }: DecisionModalProps) {
               <option value="LEARNING">Phase learning</option>
               <option value="OTHER">Autre</option>
             </select>
+            {!reason && (
+              <p className="text-xs text-red-500 mt-1">La raison est obligatoire</p>
+            )}
           </div>
 
           {/* Notes */}
@@ -108,7 +113,11 @@ export function DecisionModal({ ad, onSave, onClose }: DecisionModalProps) {
             <Button onClick={onClose} variant="outline" className="flex-1">
               Annuler
             </Button>
-            <Button onClick={handleSave} className="flex-1">
+            <Button
+              onClick={handleSave}
+              className="flex-1"
+              disabled={!reason}
+            >
               Sauvegarder
             </Button>
           </div>
