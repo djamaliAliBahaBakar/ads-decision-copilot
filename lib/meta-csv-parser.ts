@@ -216,14 +216,15 @@ function normalizeForComparison(str: string): string {
 }
 
 /**
- * Trouve le mapping des colonnes
+ * Trouve le mapping des colonnes - retourne le NOM de la colonne (pas l'index)
  */
-function findColumnMapping(headers: string[]): Record<string, number> {
-  const mapping: Record<string, number> = {}
+function findColumnMapping(headers: string[]): Record<string, string | undefined> {
+  const mapping: Record<string, string | undefined> = {}
 
   for (const [targetField, possibleNames] of Object.entries(COLUMN_MAPPINGS)) {
     for (let i = 0; i < headers.length; i++) {
-      const header = headers[i]?.trim().toLowerCase() || ''
+      const originalHeader = headers[i]?.trim() || ''
+      const header = originalHeader.toLowerCase()
       const normalizedHeader = normalizeForComparison(header)
 
       for (const possibleName of possibleNames) {
@@ -233,7 +234,8 @@ function findColumnMapping(headers: string[]): Record<string, number> {
           header.includes(possibleName.toLowerCase()) ||
           normalizedHeader.includes(normalizedName)
         ) {
-          mapping[targetField] = i
+          // Stocker le nom ORIGINAL de la colonne (pas l'index)
+          mapping[targetField] = originalHeader
           break
         }
       }
@@ -371,21 +373,19 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
     }
   }
 
-  // Log des colonnes mappées
+  // Log des colonnes mappées (columnMapping contient maintenant les noms de colonnes)
   const mappedColumns: Record<string, string> = {}
-  for (const [field, index] of Object.entries(columnMapping)) {
-    if (index !== undefined && headers[index]) {
-      mappedColumns[field] = headers[index]
+  for (const [field, headerName] of Object.entries(columnMapping)) {
+    if (headerName !== undefined) {
+      mappedColumns[field] = headerName
     }
   }
 
   // Vérifier si les résultats sont des leads ou autre chose
-  let resultIndicatorWarningAdded = false
-  if (columnMapping.result_indicator !== undefined) {
-    const firstRow = rows[0]
+  if (columnMapping.result_indicator) {
+    const firstRow = rows[0] as Record<string, any> | undefined
     if (firstRow) {
-      const values = Object.values(firstRow)
-      const indicator = values[columnMapping.result_indicator]?.toString().toLowerCase() || ''
+      const indicator = firstRow[columnMapping.result_indicator]?.toString().toLowerCase() || ''
 
       const isLeadType = LEAD_RESULT_INDICATORS.some(li => indicator.includes(li))
       const isNonLeadType = NON_LEAD_INDICATORS.some(nli => indicator.includes(nli))
@@ -393,7 +393,6 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
       if (isNonLeadType && !isLeadType) {
         warnings.push(`⚠️ ATTENTION: Vos résultats sont des "${indicator}" (clics/vues), pas des leads.`)
         warnings.push(`Pour un CPL précis, configurez Meta pour afficher les "Leads" ou "Conversions" comme résultat.`)
-        resultIndicatorWarningAdded = true
       }
     }
   }
@@ -418,22 +417,22 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
     return { data, errors, warnings, detectedFormat, mappedColumns }
   }
 
-  // Convertir les données
+  // Convertir les données - utiliser les noms de colonnes directement
   for (let i = 0; i < rows.length; i++) {
-    const row = rows[i]
-    const values = Object.values(row)
+    const row = rows[i] as Record<string, any>
 
     try {
-      const adName = values[columnMapping.ad_name]?.toString().trim()
+      // Accéder aux valeurs via le nom de colonne (pas l'index)
+      const adName = columnMapping.ad_name ? row[columnMapping.ad_name]?.toString().trim() : undefined
 
       if (!adName) {
         warnings.push(`Ligne ${i + 2}: Nom de publicité vide, ignorée`)
         continue
       }
 
-      const spend = parseNumber(values[columnMapping.spend])
-      let leads = columnMapping.leads !== undefined ? parseNumber(values[columnMapping.leads]) : 0
-      let cpl = columnMapping.cpl !== undefined ? parseNumber(values[columnMapping.cpl]) : 0
+      const spend = parseNumber(columnMapping.spend ? row[columnMapping.spend] : 0)
+      let leads = columnMapping.leads ? parseNumber(row[columnMapping.leads]) : 0
+      let cpl = columnMapping.cpl ? parseNumber(row[columnMapping.cpl]) : 0
 
       // Calculer CPL si manquant
       if (cpl === 0 && leads > 0 && spend > 0) {
@@ -453,29 +452,29 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
 
       const parsedAd: ParsedAd = {
         ad_name: adName,
-        campaign_name: columnMapping.campaign_name !== undefined
-          ? values[columnMapping.campaign_name]?.toString().trim()
+        campaign_name: columnMapping.campaign_name
+          ? row[columnMapping.campaign_name]?.toString().trim()
           : undefined,
-        ad_set_name: columnMapping.ad_set_name !== undefined
-          ? values[columnMapping.ad_set_name]?.toString().trim()
+        ad_set_name: columnMapping.ad_set_name
+          ? row[columnMapping.ad_set_name]?.toString().trim()
           : undefined,
         spend,
         leads,
         cpl: cpl || (spend / Math.max(leads, 1)),
-        date: parseDate(columnMapping.date !== undefined ? values[columnMapping.date] : null),
+        date: parseDate(columnMapping.date ? row[columnMapping.date] : null),
       }
 
       // Ajouter CTR si disponible
-      if (columnMapping.ctr !== undefined) {
-        const ctr = parseNumber(values[columnMapping.ctr])
+      if (columnMapping.ctr) {
+        const ctr = parseNumber(row[columnMapping.ctr])
         if (ctr > 0) {
           parsedAd.ctr = ctr > 1 ? ctr / 100 : ctr // Convertir en décimal si %
         }
       }
 
       // Ajouter ROAS si disponible
-      if (columnMapping.roas !== undefined) {
-        const roas = parseNumber(values[columnMapping.roas])
+      if (columnMapping.roas) {
+        const roas = parseNumber(row[columnMapping.roas])
         if (roas > 0) {
           parsedAd.roas = roas
         }
