@@ -13,7 +13,6 @@ interface Suggestion {
   id: string
   adName: string
   campaignName: string | null
-  angle: string | null
   cpl: number
   spend: number
   leads: number
@@ -233,10 +232,9 @@ export default function DecisionsPage() {
             <thead>
               <tr className="border-b">
                 <th className="text-left p-2">Ad</th>
-                <th className="text-left p-2">Angle</th>
                 <th className="text-right p-2">CPL</th>
-                <th className="text-right p-2">Trend 3d</th>
-                <th className="text-right p-2">Jours</th>
+                <th className="text-right p-2">Leads</th>
+                <th className="text-right p-2">Spend</th>
                 <th className="text-center p-2">Recommandation</th>
                 <th className="text-center p-2">Confiance</th>
                 <th className="text-center p-2">Action</th>
@@ -252,27 +250,22 @@ export default function DecisionsPage() {
                     key={ad.id}
                     className={`border-b hover:bg-gray-50 ${isDecided ? 'bg-gray-100 opacity-60' : ''}`}
                   >
-                    <td className="p-2 font-medium">
-                      {ad.adName}
-                      {isDecided && <span className="ml-2 text-xs text-gray-500">✅ Décidé</span>}
-                    </td>
                     <td className="p-2">
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-                        {ad.angle}
-                      </span>
+                      <div className="font-medium">
+                        {ad.adName}
+                        {isDecided && <span className="ml-2 text-xs text-gray-500">✅</span>}
+                      </div>
                     </td>
-                    <td className="p-2 text-right">€{ad.cpl.toFixed(2)}</td>
-                    <td className={`p-2 text-right ${ad.cplTrend3d > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      {ad.cplTrend3d > 0 ? '+' : ''}{ad.cplTrend3d.toFixed(1)}%
-                    </td>
-                    <td className="p-2 text-right">{ad.daysRunning}d</td>
+                    <td className="p-2 text-right font-medium">€{ad.cpl.toFixed(2)}</td>
+                    <td className="p-2 text-right">{ad.leads}</td>
+                    <td className="p-2 text-right text-gray-600">€{ad.spend.toFixed(0)}</td>
                     <td className="p-2 text-center">
                       {(() => {
                         const actionLabel = getActionLabel(ad.action)
                         return (
                           <span
                             className={`px-2 py-1 rounded text-xs font-semibold ${actionLabel.bg} ${actionLabel.text}`}
-                            title={actionLabel.tooltip}
+                            title={ad.reason}
                           >
                             {actionLabel.emoji} {ad.action}
                           </span>

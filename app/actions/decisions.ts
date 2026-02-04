@@ -28,12 +28,11 @@ export async function getDecisionSuggestions() {
     orderBy: { date: 'desc' },
   })
 
-  // Grouper par metaAdId si disponible, sinon par nom de pub
+  // Grouper par nom de pub (agrège toutes les entrées d'AdSets différents)
+  // Cela évite les doublons visuels et simplifie l'analyse pour l'utilisateur
   const adsMap = new Map<string, typeof ads>()
   ads.forEach(ad => {
-    // Utiliser metaAdId comme clé primaire (unique par pub Meta)
-    // Sinon fallback sur adName
-    const key = ad.metaAdId || ad.adName
+    const key = ad.adName
     if (!adsMap.has(key)) {
       adsMap.set(key, [])
     }
@@ -174,12 +173,11 @@ export async function getDecisionSuggestions() {
       id: ad.id,
       adName: ad.adName,
       campaignName: ad.campaignName,
-      angle: ad.angle,
       cpl: adCpl,
       spend: adTotalSpend,
       leads: adTotalLeads,
       cplTrend3d,
-      daysRunning: isAggregatedData ? null : daysRunning, // null = données agrégées
+      daysRunning: isAggregatedData ? null : daysRunning,
       action,
       confidence,
       reason,
