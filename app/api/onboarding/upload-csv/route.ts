@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
       adName: row.ad_name,
       campaignName: row.campaign_name || null,
       adSetName: row.ad_set_name || null,
+      metaAdId: row.meta_ad_id || null,
       angle: row.angle || null,
       cpl: row.cpl,
       spend: row.spend,

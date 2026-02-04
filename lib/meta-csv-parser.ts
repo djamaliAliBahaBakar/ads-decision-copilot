@@ -9,6 +9,7 @@ export interface ParsedAd {
   ad_name: string
   campaign_name?: string
   ad_set_name?: string
+  meta_ad_id?: string
   angle?: string
   cpl: number
   spend: number
@@ -53,92 +54,213 @@ const NON_LEAD_INDICATORS = [
 
 const COLUMN_MAPPINGS: Record<string, string[]> = {
   ad_name: [
+    // Français
     'Nom de la publicité',
     'Nom de la publicitÃ©', // encodage cassé
+    'Publicité',
+    // English
     'Ad Name',
     'ad_name',
-    'Publicité',
+    // Deutsch
+    'Anzeigenname',
+    'Name der Werbeanzeige',
+    // Español
+    'Nombre del anuncio',
+    // Italiano
+    'Nome inserzione',
+    // Português
+    'Nome do anúncio',
+    // Nederlands
+    'Advertentienaam',
+  ],
+  meta_ad_id: [
+    // Français
+    'ID de la publicité',
+    'ID de la publicitÃ©',
+    'ID publicité',
+    // English
+    'Ad ID',
+    'ad_id',
+    'Ad id',
+    // Deutsch
+    'Anzeigen-ID',
+    'Werbeanzeigen-ID',
+    // Español
+    'ID del anuncio',
+    // Italiano
+    'ID inserzione',
+    // Português
+    'ID do anúncio',
   ],
   campaign_name: [
+    // Français
     'Nom de la campagne',
+    'Campagne',
+    // English
     'Campaign Name',
     'campaign_name',
-    'Campagne',
+    // Deutsch
+    'Kampagnenname',
+    // Español
+    'Nombre de la campaña',
+    // Italiano
+    'Nome campagna',
+    // Português
+    'Nome da campanha',
   ],
   ad_set_name: [
+    // Français
     "Nom de l'ensemble de publicités",
-    "Nom de l'ensemble de publicités",
+    'Ensemble de publicités',
+    // English
     'Ad Set Name',
     'Ad set name',
     'ad_set_name',
-    'Ensemble de publicités',
-    // Encodings cassés courants - utiliser des patterns partiels
+    // Deutsch
+    'Anzeigengruppenname',
+    'Name der Anzeigengruppe',
+    // Español
+    'Nombre del conjunto de anuncios',
+    // Italiano
+    'Nome gruppo di inserzioni',
+    // Português
+    'Nome do conjunto de anúncios',
+    // Patterns partiels (fallback)
     'ensemble de publicit',
     'ad set',
+    'anzeigengruppe',
+    'conjunto de anuncios',
   ],
   spend: [
+    // Français
     'Montant dépensé (EUR)',
     'Montant dÃ©pensÃ© (EUR)',
+    'Dépenses',
+    // English
     'Amount Spent (EUR)',
     'Amount spent',
     'spend',
-    'Dépenses',
+    // Deutsch
+    'Ausgegebener Betrag',
+    // Español
+    'Importe gastado',
+    // Italiano
+    'Importo speso',
+    // Português
+    'Valor gasto',
+    // Generic
     'Budget',
   ],
   leads: [
+    // Français
     'Résultats',
     'RÃ©sultats',
+    // English
     'Results',
     'Conversions',
     'leads',
     'Leads',
     'Actions',
+    // Deutsch
+    'Ergebnisse',
+    // Español
+    'Resultados',
+    // Italiano
+    'Risultati',
+    // Português
+    'Resultados',
   ],
   cpl: [
+    // Français
     'Coût par résultat',
     'CoÃ»t par rÃ©sultat',
+    // English
     'Cost per Result',
     'Cost per result',
     'cpl',
     'CPL',
     'CPA',
+    // Deutsch
+    'Kosten pro Ergebnis',
+    // Español
+    'Coste por resultado',
+    // Italiano
+    'Costo per risultato',
+    // Português
+    'Custo por resultado',
   ],
   ctr: [
     'CTR (tous)',
     'CTR',
     'ctr',
     'Click-Through Rate',
+    // Français
     'Taux de clics',
+    // Deutsch
+    'Klickrate',
+    // Español
+    'Porcentaje de clics',
+    // Italiano
+    'Percentuale di clic',
   ],
   roas: [
     'ROAS',
     'roas',
     'Return on Ad Spend',
+    // Deutsch
+    'Rendite der Werbeausgaben',
+    // Español
+    'Retorno de la inversión publicitaria',
   ],
   date: [
     'date',
     'Date',
+    // Français
     'Jour',
-    'Day',
-    'Fin des rapports',        // Priorité à la date de fin pour données agrégées
     'Fin des rapports',
     'Début des rapports',
     'DÃ©but des rapports',
+    // English
+    'Day',
     'Reporting starts',
     'Reporting ends',
+    // Deutsch
+    'Tag',
+    'Berichtszeitraum endet',
+    'Berichtszeitraum beginnt',
+    // Español
+    'Día',
+    'Fecha',
+    // Italiano
+    'Giorno',
+    'Data',
   ],
   impressions: [
     'Impressions',
     'impressions',
+    // Deutsch
+    'Impressionen',
+    // Español/Italiano/Português
+    'Impresiones',
+    'Impressioni',
+    'Impressões',
   ],
   result_indicator: [
+    // Français
     'Indicateur de résultats',
     'Indicateur de rÃ©sultats',
+    // English
     'Result Indicator',
     'Result Type',
+    // Deutsch
+    'Ergebnisindikator',
+    // Español
+    'Indicador de resultados',
   ],
   clicks: [
+    // Français
     'Clics',
+    // English
     'Clicks',
     'clicks',
     'Clics sur le lien',
@@ -397,6 +519,11 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
     }
   }
 
+  // Recommandation si l'ID de pub n'est pas présent
+  if (!columnMapping.meta_ad_id) {
+    warnings.push(`💡 CONSEIL: Ajoutez la colonne "ID de la publicité" dans votre export Meta pour un meilleur suivi des doublons.`)
+  }
+
   // Vérifier les colonnes obligatoires
   if (columnMapping.ad_name === undefined) {
     errors.push('Colonne "Nom de la publicité" non trouvée')
@@ -457,6 +584,9 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
           : undefined,
         ad_set_name: columnMapping.ad_set_name
           ? row[columnMapping.ad_set_name]?.toString().trim()
+          : undefined,
+        meta_ad_id: columnMapping.meta_ad_id
+          ? row[columnMapping.meta_ad_id]?.toString().trim()
           : undefined,
         spend,
         leads,

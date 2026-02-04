@@ -5,6 +5,7 @@ export interface AdRow {
   ad_name: string
   campaign_name?: string
   ad_set_name?: string
+  meta_ad_id?: string
   angle?: string
   cpl: number
   spend: number

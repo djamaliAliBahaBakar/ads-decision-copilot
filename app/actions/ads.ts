@@ -24,16 +24,26 @@ export async function uploadAds(csvText: string) {
   // Récupérer les données existantes pour détecter les doublons
   const existingAds = await prisma.ad.findMany({
     where: { userId: user.id },
-    select: { adName: true, adSetName: true, date: true },
+    select: { adName: true, adSetName: true, metaAdId: true, date: true },
   })
 
-  // Créer un Set des clés existantes (adName + adSetName + date)
+  // Créer des Sets pour la détection des doublons
+  // 1. Par metaAdId (prioritaire si disponible)
+  const existingMetaAdIds = new Set(
+    existingAds.filter(ad => ad.metaAdId).map(ad => ad.metaAdId)
+  )
+  // 2. Par clé composite (fallback)
   const existingKeys = new Set(
     existingAds.map(ad => `${ad.adName}|${ad.adSetName || ''}|${ad.date.toISOString().split('T')[0]}`)
   )
 
-  // Filtrer les doublons (même pub, même AdSet, même date = doublon)
+  // Filtrer les doublons
   const newRows = result.data.filter(row => {
+    // Si l'import a un metaAdId, l'utiliser comme clé primaire
+    if (row.meta_ad_id) {
+      return !existingMetaAdIds.has(row.meta_ad_id)
+    }
+    // Sinon, utiliser la clé composite (adName + adSetName + date)
     const key = `${row.ad_name}|${row.ad_set_name || ''}|${row.date}`
     return !existingKeys.has(key)
   })
@@ -53,6 +63,7 @@ export async function uploadAds(csvText: string) {
         adName: row.ad_name,
         campaignName: row.campaign_name || 'Unknown',
         adSetName: row.ad_set_name || null,
+        metaAdId: row.meta_ad_id || null,
         angle: row.angle || 'Unknown',
         cpl: row.cpl,
         spend: row.spend,
@@ -65,8 +76,8 @@ export async function uploadAds(csvText: string) {
     createdCount = newRows.length
   }
 
-  // Warnings
-  const warnings: string[] = []
+  // Warnings (inclure les warnings du parser)
+  const warnings: string[] = result.warnings ? [...result.warnings] : []
 
   if (duplicatesCount > 0) {
     warnings.push(
