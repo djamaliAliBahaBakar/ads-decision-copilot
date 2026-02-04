@@ -75,6 +75,11 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
   ],
   meta_ad_id: [
     // Français
+    'Nº de la publicité',
+    'Nº de la publicitÃ©',
+    'N° de la publicité',
+    'Numéro de la publicité',
+    'NumÃ©ro de la publicitÃ©',
     'ID de la publicité',
     'ID de la publicitÃ©',
     'ID publicité',
@@ -87,10 +92,13 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
     'Werbeanzeigen-ID',
     // Español
     'ID del anuncio',
+    'Número del anuncio',
     // Italiano
     'ID inserzione',
+    'Numero inserzione',
     // Português
     'ID do anúncio',
+    'Número do anúncio',
   ],
   campaign_name: [
     // Français
