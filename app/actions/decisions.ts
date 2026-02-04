@@ -95,6 +95,7 @@ export async function getDecisionSuggestions() {
     let action: 'KILL' | 'SCALE' | 'HOLD' | 'REVIEW' = 'REVIEW'
     let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW'
     let reason = 'À analyser'
+    let impact = '' // Impact en € concret
 
     // === RÈGLES UTILISATEUR ===
     rules.forEach(rule => {
@@ -104,13 +105,16 @@ export async function getDecisionSuggestions() {
       if (rule.ruleType === 'kill_if_cpl' && adCpl > rule.threshold && meetsMinDays) {
         action = 'KILL'
         confidence = 'HIGH'
+        const excessPerLead = adCpl - rule.threshold
         reason = `Ta règle: CPL > €${rule.threshold} → Kill. Ici CPL = €${adCpl.toFixed(2)}.`
+        impact = `-€${(excessPerLead * adTotalLeads).toFixed(0)} au-dessus du seuil`
       }
 
       if (rule.ruleType === 'scale_if_roas' && ad.roas && ad.roas > rule.threshold && meetsMinDays) {
         action = 'SCALE'
         confidence = 'MEDIUM'
         reason = `Ta règle: ROAS > ${rule.threshold}x → Scale. Ici ROAS = ${ad.roas.toFixed(2)}x.`
+        impact = `ROAS ${ad.roas.toFixed(1)}x 🚀`
       }
     })
 
@@ -133,25 +137,32 @@ export async function getDecisionSuggestions() {
           action = 'KILL'
           confidence = 'MEDIUM'
           reason = `€${adTotalSpend.toFixed(0)} dépensés → 0 lead. Budget gaspillé.`
+          impact = `-€${adTotalSpend.toFixed(0)} perdus`
         } else if (cplRatio > 1.5 && adTotalLeads >= 3) {
           // CPL trop élevé par rapport à la moyenne
           action = 'KILL'
           confidence = getConfidenceFromLeads(adTotalLeads)
-          reason = `CPL ${cplMultiplier}x plus cher que la moyenne (€${avgCplGlobal.toFixed(2)}). Tu paies €${(adCpl - avgCplGlobal).toFixed(2)} de trop par lead.`
+          const excessPerLead = adCpl - avgCplGlobal
+          const totalExcess = excessPerLead * adTotalLeads
+          reason = `CPL ${cplMultiplier}x plus cher que la moyenne (€${avgCplGlobal.toFixed(2)}). Tu paies €${excessPerLead.toFixed(2)} de trop par lead.`
+          impact = `-€${totalExcess.toFixed(0)} gaspillés`
         } else if (cplRatio < 0.7 && adTotalLeads >= 5) {
           // CPL excellent - opportunité à exploiter
           action = 'SCALE'
           confidence = getConfidenceFromLeads(adTotalLeads)
-          const savings = ((1 - cplRatio) * 100).toFixed(0)
-          reason = `CPL €${adCpl.toFixed(2)} = ${savings}% moins cher que la moyenne. Ta meilleure pub!`
+          const savingsPerLead = avgCplGlobal - adCpl
+          reason = `CPL €${adCpl.toFixed(2)} = ${((1 - cplRatio) * 100).toFixed(0)}% moins cher que la moyenne. Ta meilleure pub!`
+          impact = `+€${savingsPerLead.toFixed(2)}/lead économisé`
         } else if (adTotalLeads < 3) {
           action = 'HOLD'
           confidence = 'LOW'
           reason = `Seulement ${adTotalLeads} lead${adTotalLeads > 1 ? 's' : ''}. Attends plus de conversions pour décider.`
+          impact = `Attends ${3 - adTotalLeads}+ leads`
         } else {
           action = 'HOLD'
           confidence = getConfidenceFromLeads(adTotalLeads)
           reason = `CPL €${adCpl.toFixed(2)} proche de la moyenne (€${avgCplGlobal.toFixed(2)}). Surveille l'évolution.`
+          impact = `Dans la moyenne`
         }
       } else {
         // Mode quotidien : utiliser les tendances
@@ -159,14 +170,17 @@ export async function getDecisionSuggestions() {
           action = 'KILL'
           confidence = getConfidenceFromLeads(adTotalLeads)
           reason = `CPL en hausse de +${cplTrend3d.toFixed(0)}% sur 3 jours. Performance en chute.`
+          impact = `CPL +${cplTrend3d.toFixed(0)}% 📉`
         } else if (ad.roas && ad.roas > 3 && cplTrend3d < 10) {
           action = 'SCALE'
           confidence = getConfidenceFromLeads(adTotalLeads)
           reason = `ROAS ${ad.roas.toFixed(1)}x stable. Pub rentable à pousser!`
+          impact = `ROAS ${ad.roas.toFixed(1)}x 🚀`
         } else if (daysRunning < 3) {
           action = 'HOLD'
           confidence = 'LOW'
           reason = `Pub trop récente (${daysRunning}j). Attends 3 jours minimum pour décider.`
+          impact = `Attends ${3 - daysRunning}j+`
         }
       }
     }
@@ -183,6 +197,7 @@ export async function getDecisionSuggestions() {
       action,
       confidence,
       reason,
+      impact,
       isAggregatedData,
     }
   })

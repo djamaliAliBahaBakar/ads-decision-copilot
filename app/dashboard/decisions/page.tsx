@@ -21,6 +21,7 @@ interface Suggestion {
   action: 'KILL' | 'SCALE' | 'HOLD' | 'REVIEW'
   confidence: 'HIGH' | 'MEDIUM' | 'LOW'
   reason: string
+  impact: string
   isAggregatedData?: boolean
 }
 
@@ -236,7 +237,7 @@ export default function DecisionsPage() {
                 <th className="text-right p-2">Leads</th>
                 <th className="text-right p-2">Spend</th>
                 <th className="text-center p-2">Recommandation</th>
-                <th className="text-center p-2">Confiance</th>
+                <th className="text-left p-2">Impact</th>
                 <th className="text-center p-2">Action</th>
               </tr>
             </thead>
@@ -272,13 +273,13 @@ export default function DecisionsPage() {
                         )
                       })()}
                     </td>
-                    <td className="p-2 text-center">
+                    <td className="p-2 text-left">
                       <span className={`text-xs font-semibold ${
-                        ad.confidence === 'HIGH' ? 'text-green-600' :
-                        ad.confidence === 'MEDIUM' ? 'text-yellow-600' :
-                        'text-gray-600'
+                        ad.action === 'KILL' ? 'text-red-600' :
+                        ad.action === 'SCALE' ? 'text-green-600' :
+                        'text-gray-500'
                       }`}>
-                        {ad.confidence}
+                        {ad.impact}
                       </span>
                     </td>
                     <td className="p-2 text-center">
