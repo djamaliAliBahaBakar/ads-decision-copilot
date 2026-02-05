@@ -149,7 +149,6 @@ export default function JournalPage() {
                 <tr className="border-b">
                   <th className="text-left p-2">Date</th>
                   <th className="text-left p-2">Ad</th>
-                  <th className="text-left p-2 hidden md:table-cell">Angle</th>
                   <th className="text-center p-2">Action</th>
                   <th className="text-left p-2 hidden lg:table-cell">Raison</th>
                   <th className="text-right p-2">CPL</th>

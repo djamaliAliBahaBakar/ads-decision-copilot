@@ -47,11 +47,6 @@ export function DecisionRow({ decision, onViewDetails, onWhatIf }: DecisionRowPr
       <td className="p-2 font-medium text-sm truncate" title={decision.adName}>
         {decision.adName}
       </td>
-      <td className="p-2 hidden md:table-cell">
-        <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
-          {decision.angle}
-        </span>
-      </td>
       <td className="p-2 text-center">
         <span
           className={`px-2 py-1 rounded text-xs font-semibold ${actionStyle.bg} ${actionStyle.text}`}

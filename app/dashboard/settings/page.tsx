@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { getUserRules, createUserRule, deleteUserRule } from '@/app/actions/rules'
 import { DisciplineWidget } from '@/components/tiltmeter/discipline-widget'
-import { MetaConnectButton } from '@/components/meta/meta-connect-button'
+// import { MetaConnectButton } from '@/components/meta/meta-connect-button' // MVP V0: désactivé
 import { CardSkeleton } from '@/components/ui/loading-skeleton'
 import { Trash2, Plus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -19,6 +19,38 @@ interface UserRule {
   threshold: number
   days: number
   isActive: boolean
+  description?: string | null
+}
+
+// Helper pour formater la description d'une règle
+function formatRuleDescription(rule: UserRule): string {
+  // Si la règle a une description personnalisée, l'utiliser
+  if (rule.description) {
+    return rule.description
+  }
+
+  // Sinon, générer une description basée sur le type
+  switch (rule.ruleType) {
+    case 'kill_if_cpl':
+      return `🔴 Kill si CPL > €${rule.threshold}`
+    case 'kill_no_conversions':
+      return `🔴 Kill si 0 conversion après ${rule.days}j (spend ≥ €${rule.threshold})`
+    case 'kill_high_cpl':
+      return `🔴 Kill si CPL ≥ ${rule.threshold}× médiane`
+    case 'kill_if_ctr_down':
+      return `🔴 Kill si CTR < ${rule.threshold}%`
+    case 'scale_if_roas':
+      return `🟢 Scale si ROAS > ${rule.threshold}x`
+    case 'scale_good_performance':
+      return `🟢 Scale si CPL < médiane pendant ${rule.days}j`
+    case 'fix_1x_1-5x':
+    case 'fix_1-5x_1-7x':
+      return `🟠 Fix si CPL entre ${rule.threshold}× et 1.7× médiane`
+    case 'hold_if_learning':
+      return `🟡 Hold si < ${rule.days} jours`
+    default:
+      return `${rule.ruleType} (seuil: ${rule.threshold})`
+  }
 }
 
 export default function SettingsPage() {
@@ -112,10 +144,11 @@ export default function SettingsPage() {
       {/* Discipline Widget */}
       {!loading && <DisciplineWidget />}
 
-      {/* 🔥 META API INTEGRATION */}
+      {/* MVP V0: Meta Connect désactivé
       <MetaConnectButton />
+      */}
 
-       {/* 🔥 ADD THIS */}
+      {/* Email Digest Settings */}
       <DigestSettings />
 
       {/* Créer nouvelle règle */}
@@ -188,9 +221,7 @@ export default function SettingsPage() {
               >
                 <div className="flex-1">
                   <p className="font-medium text-sm md:text-base">
-                    {rule.ruleType === 'kill_if_cpl' && `Kill si CPL > €${rule.threshold}`}
-                    {rule.ruleType === 'scale_if_roas' && `Scale si ROAS > ${rule.threshold}x`}
-                    {rule.ruleType === 'hold_if_learning' && `Hold si learning`}
+                    {formatRuleDescription(rule)}
                   </p>
                   <p className="text-xs md:text-sm text-gray-600">Pendant {rule.days} jours</p>
                 </div>
@@ -211,7 +242,7 @@ export default function SettingsPage() {
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 slide-up">
         <h3 className="font-semibold text-blue-900 mb-2">📖 Comment ça marche</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>✓ Connecte Meta → données sync auto chaque jour</li>
+          <li>✓ Importe tes données CSV depuis Meta Ads Manager</li>
           <li>✓ Tes règles s'appliquent automatiquement</li>
           <li>✓ Plus tu suis tes règles, meilleur est ton ROI</li>
         </ul>
