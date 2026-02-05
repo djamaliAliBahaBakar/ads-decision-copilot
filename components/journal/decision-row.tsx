@@ -15,6 +15,7 @@ interface Decision {
   cplAtDecision: number
   confidence: number | null
   createdAt: Date
+  actualSavings?: number | null
 }
 
 interface DecisionRowProps {
@@ -59,6 +60,15 @@ export function DecisionRow({ decision, onViewDetails, onWhatIf }: DecisionRowPr
         {decision.reason}
       </td>
       <td className="p-2 text-right text-sm">€{decision.cplAtDecision.toFixed(2)}</td>
+      <td className="p-2 text-right text-sm">
+        {decision.action === 'KILL' && decision.actualSavings ? (
+          <span className="text-green-600 font-medium">+{decision.actualSavings}€</span>
+        ) : decision.action === 'SCALE' ? (
+          <span className="text-blue-600 font-medium">—</span>
+        ) : (
+          <span className="text-gray-400">—</span>
+        )}
+      </td>
       <td className="p-2 text-right">
         <span
           className={`text-xs font-bold ${confidenceColors[decision.confidence ?? 3] || confidenceColors[3]}`}

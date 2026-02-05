@@ -25,7 +25,7 @@ export function DisciplineWidget() {
 
   if (loading) return <div>Chargement...</div>
 
-  if (!score) return null
+  if (!score || score.total === 0) return null
 
   const scoreColor = 
     score.percentage >= 70 ? 'text-green-600' : 
@@ -66,6 +66,9 @@ export function DisciplineWidget() {
       <div className="mt-4 p-3 bg-white rounded border border-blue-300">
         <p className="text-xs text-blue-900">
           💡 Plus tu suis tes règles, meilleur est ton ROI (historiquement +10-15%)
+        </p>
+        <p className="text-xs text-blue-700 mt-1">
+          Les comptes les plus rentables suivent leurs règles à 75%+
         </p>
       </div>
     </Card>

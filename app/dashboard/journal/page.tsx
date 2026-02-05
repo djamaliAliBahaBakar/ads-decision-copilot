@@ -152,6 +152,7 @@ export default function JournalPage() {
                   <th className="text-center p-2">Action</th>
                   <th className="text-left p-2 hidden lg:table-cell">Raison</th>
                   <th className="text-right p-2">CPL</th>
+                  <th className="text-right p-2">Impact</th>
                   <th className="text-right p-2">Conf.</th>
                   <th className="text-center p-2">Actions</th>
                 </tr>

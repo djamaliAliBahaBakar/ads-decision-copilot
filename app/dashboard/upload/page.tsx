@@ -206,6 +206,13 @@ export default function UploadPage() {
         </div>
       </Card>}
 
+      {/* Reassurance text */}
+      {!uploadResult && !file && (
+        <div className="text-center text-sm text-gray-500">
+          <p>Format Meta Ads Manager · Colonnes détectées automatiquement</p>
+        </div>
+      )}
+
       {/* Mapping détecté pour les exports Meta */}
       {mappedColumns && Object.keys(mappedColumns).length > 0 && detectedFormat !== 'adsdecision' && !error && (
         <Card className="p-4 bg-blue-50 border-blue-200">

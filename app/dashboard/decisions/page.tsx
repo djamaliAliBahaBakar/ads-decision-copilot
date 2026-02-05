@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { getDecisionSuggestions, logDecision, getDecisionsForAds, getDecisionQuota } from '@/app/actions/decisions'
+import { getDecisionSuggestions, logDecision, getDecisionsForAds, getDecisionQuota, getRealizedSavings } from '@/app/actions/decisions'
 import { DecisionModal } from '@/components/decisions/decision-modal'
 import { getActionLabel } from '@/lib/action-labels'
 import { usePaywall } from '@/components/paywall'
-import { Zap, TrendingUp, Mail, Target, ChevronRight } from 'lucide-react'
+import { Zap, TrendingUp, Mail, Target, ChevronRight, Coins } from 'lucide-react'
 
 interface Suggestion {
   id: string
@@ -39,6 +39,13 @@ interface DecisionQuota {
   remaining: number
 }
 
+interface SavingsData {
+  realized: number
+  potential: number
+  decisionsCount: number
+  adsToDecide: number
+}
+
 export default function DecisionsPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [decisions, setDecisions] = useState<DecisionRecord[]>([])
@@ -46,6 +53,7 @@ export default function DecisionsPage() {
   const [selectedAd, setSelectedAd] = useState<Suggestion | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [quota, setQuota] = useState<DecisionQuota | null>(null)
+  const [savings, setSavings] = useState<SavingsData | null>(null)
   const { openPaywall } = usePaywall()
 
   useEffect(() => {
@@ -54,14 +62,16 @@ export default function DecisionsPage() {
 
   const fetchData = async () => {
     try {
-      const [suggestionsData, decisionsData, quotaData] = await Promise.all([
+      const [suggestionsData, decisionsData, quotaData, savingsData] = await Promise.all([
         getDecisionSuggestions(),
         getDecisionsForAds(),
         getDecisionQuota(),
+        getRealizedSavings(),
       ])
       setSuggestions(suggestionsData)
       setDecisions(decisionsData)
       setQuota(quotaData)
+      setSavings(savingsData)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -222,6 +232,25 @@ export default function DecisionsPage() {
                 Passer Pro
                 <ChevronRight className="w-4 h-4" />
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Potential Savings Banner */}
+      {savings && savings.potential > 0 && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Coins className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-amber-900">
+                En suivant ces recommandations, tu pourrais économiser ~{savings.potential}€ ce mois-ci
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Basé sur {savings.adsToDecide} pub{savings.adsToDecide > 1 ? 's' : ''} sous-performante{savings.adsToDecide > 1 ? 's' : ''}
+              </p>
             </div>
           </div>
         </div>

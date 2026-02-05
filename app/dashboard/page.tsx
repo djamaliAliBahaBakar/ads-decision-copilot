@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button'
 import { getAdsPerformanceSummary } from '@/app/actions/ads'
 import { getRealizedSavings, getDecisionQuota } from '@/app/actions/decisions'
 import Link from 'next/link'
-import { TrendingUp, TrendingDown, ArrowRight, Zap, Upload, CheckCircle2, Sparkles, Lock, Target, DollarSign, Users } from 'lucide-react'
+import { TrendingUp, TrendingDown, ArrowRight, Zap, Upload, CheckCircle2, Sparkles, Lock, Target, DollarSign, Users, ClipboardList } from 'lucide-react'
+import { DisciplineWidget } from '@/components/tiltmeter/discipline-widget'
 import { usePaywall } from '@/components/paywall'
 
 interface AdPerformance {
@@ -121,6 +122,12 @@ export default function DashboardPage() {
         </h1>
         <p className="text-lg text-slate-600 font-light">
           {data.adsCount} pub{data.adsCount > 1 ? 's' : ''} analysée{data.adsCount > 1 ? 's' : ''}
+          {data.adsToDecide > 0 && (
+            <span className="ml-2 inline-flex items-center gap-1.5 text-orange-600 font-medium">
+              <ClipboardList className="w-4 h-4" />
+              {data.adsToDecide} décision{data.adsToDecide > 1 ? 's' : ''} en attente
+            </span>
+          )}
         </p>
       </div>
 
@@ -149,6 +156,11 @@ export default function DashboardPage() {
           <p className="text-2xl font-bold text-slate-950">{data.avgCpl.toFixed(2)}€</p>
           <p className="text-xs text-slate-500">CPL moyen</p>
         </Card>
+      </div>
+
+      {/* Discipline Widget */}
+      <div className={`transition-all duration-700 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+        <DisciplineWidget />
       </div>
 
       {/* Top Performers */}
