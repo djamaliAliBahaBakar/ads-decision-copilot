@@ -71,29 +71,34 @@ export function SubscriptionSettings() {
         )}
       </div>
 
-      <Button
-        onClick={handleManageSubscription}
-        disabled={loading}
-        variant="outline"
-        className="w-full"
-      >
-        {loading ? (
-          <span className="flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            Redirection...
-          </span>
-        ) : (
-          <span className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" />
-            Gérer mon abonnement
-            <ExternalLink className="w-3 h-3 ml-1" />
-          </span>
-        )}
-      </Button>
+      {/* Ne pas afficher le bouton pour les SUPERUSER (pas d'abonnement Stripe) */}
+      {access.level !== 'SUPERUSER' && (
+        <>
+          <Button
+            onClick={handleManageSubscription}
+            disabled={loading}
+            variant="outline"
+            className="w-full"
+          >
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Redirection...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4" />
+                Gérer mon abonnement
+                <ExternalLink className="w-3 h-3 ml-1" />
+              </span>
+            )}
+          </Button>
 
-      <p className="text-xs text-gray-500 text-center mt-3">
-        Modifier le moyen de paiement, changer de plan ou annuler
-      </p>
+          <p className="text-xs text-gray-500 text-center mt-3">
+            Modifier le moyen de paiement, changer de plan ou annuler
+          </p>
+        </>
+      )}
     </Card>
   )
 }

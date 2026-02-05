@@ -31,6 +31,7 @@ function formatRuleDescription(rule: UserRule): string {
 
   // Sinon, générer une description basée sur le type
   switch (rule.ruleType) {
+    // KILL rules
     case 'kill_if_cpl':
       return `🔴 Kill si CPL > €${rule.threshold}`
     case 'kill_no_conversions':
@@ -39,15 +40,30 @@ function formatRuleDescription(rule: UserRule): string {
       return `🔴 Kill si CPL ≥ ${rule.threshold}× médiane`
     case 'kill_if_ctr_down':
       return `🔴 Kill si CTR < ${rule.threshold}%`
+
+    // SCALE rules
     case 'scale_if_roas':
       return `🟢 Scale si ROAS > ${rule.threshold}x`
     case 'scale_good_performance':
       return `🟢 Scale si CPL < médiane pendant ${rule.days}j`
+
+    // FIX rules
     case 'fix_1x_1-5x':
     case 'fix_1-5x_1-7x':
       return `🟠 Fix si CPL entre ${rule.threshold}× et 1.7× médiane`
+    case 'fix_degradation':
+      return `🟠 Fix si CPL +${rule.threshold}% vs période précédente`
+    case 'fix_clicks_no_leads':
+      return `🟠 Fix landing si clics OK mais peu de leads`
+
+    // HOLD rules
     case 'hold_if_learning':
       return `🟡 Hold si < ${rule.days} jours`
+
+    // TEST rules
+    case 'test_no_winner':
+      return `🔵 Test nouvelle variable (${rule.threshold}% budget)`
+
     default:
       return `${rule.ruleType} (seuil: ${rule.threshold})`
   }
