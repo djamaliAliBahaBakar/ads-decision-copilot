@@ -285,3 +285,86 @@ export async function getAnglesPerformance() {
     worstAngle: dangerAngles.length > 0 ? dangerAngles[dangerAngles.length - 1] : null,
   }
 }
+
+// Nouvelle fonction pour le Dashboard - groupé par nom de pub
+export async function getAdsPerformanceSummary() {
+  const user = await getOrCreateUser()
+  if (!user) {
+    throw new Error('User not found')
+  }
+
+  const ads = await prisma.ad.findMany({
+    where: { userId: user.id },
+    orderBy: { date: 'desc' },
+  })
+
+  if (ads.length === 0) {
+    return null
+  }
+
+  // Grouper par nom de pub
+  const adGroups: Record<string, {
+    totalSpend: number
+    totalLeads: number
+    entries: number
+  }> = {}
+
+  ads.forEach(ad => {
+    const key = ad.adName
+    if (!adGroups[key]) {
+      adGroups[key] = { totalSpend: 0, totalLeads: 0, entries: 0 }
+    }
+    adGroups[key].totalSpend += ad.spend
+    adGroups[key].totalLeads += ad.leads
+    adGroups[key].entries++
+  })
+
+  // Convertir en tableau avec CPL calculé
+  const adsWithCpl = Object.entries(adGroups).map(([name, data]) => ({
+    name,
+    spend: data.totalSpend,
+    leads: data.totalLeads,
+    cpl: data.totalLeads > 0 ? data.totalSpend / data.totalLeads : 0,
+  }))
+
+  // KPIs globaux
+  const totalSpend = adsWithCpl.reduce((sum, a) => sum + a.spend, 0)
+  const totalLeads = adsWithCpl.reduce((sum, a) => sum + a.leads, 0)
+  const avgCpl = totalLeads > 0 ? totalSpend / totalLeads : 0
+
+  // Séparer les pubs avec leads et sans leads
+  const adsWithLeads = adsWithCpl.filter(a => a.leads > 0).sort((a, b) => a.cpl - b.cpl)
+  const adsWithoutLeads = adsWithCpl.filter(a => a.leads === 0 && a.spend > 0)
+
+  // Top 3 meilleures (CPL le plus bas)
+  const topPerformers = adsWithLeads.slice(0, 3)
+
+  // Top 3 pires: d'abord les pubs sans leads (gaspillage), puis CPL le plus haut
+  const worstPerformers = [
+    ...adsWithoutLeads.sort((a, b) => b.spend - a.spend).slice(0, 3),
+    ...adsWithLeads.slice(-3).reverse(),
+  ].slice(0, 3)
+
+  // Calculer les économies potentielles (pubs sans leads + pubs avec CPL > 2x moyenne)
+  const wastefulAds = [
+    ...adsWithoutLeads,
+    ...adsWithLeads.filter(a => a.cpl > avgCpl * 2),
+  ]
+  const potentialSavings = wastefulAds.reduce((sum, a) => sum + a.spend * 0.6, 0)
+
+  return {
+    // KPIs globaux
+    totalSpend,
+    totalLeads,
+    avgCpl,
+    adsCount: adsWithCpl.length,
+
+    // Top performers
+    topPerformers,
+    worstPerformers,
+
+    // Opportunité
+    potentialSavings: Math.round(potentialSavings),
+    adsToDecide: worstPerformers.length,
+  }
+}
