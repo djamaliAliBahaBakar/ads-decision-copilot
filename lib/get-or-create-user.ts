@@ -48,31 +48,37 @@ export async function getOrCreateUser() {
     where: { clerkId: userId },
   })
 
-  // Si n'existe pas → créer
+  // Si n'existe pas → créer (avec gestion de race condition)
   if (!user) {
     // Récupérer l'email depuis Clerk avec retry
     const email = await getClerkUserEmail()
+    const userEmail = email || `pending-${userId}@temp.local`
 
     if (!email) {
-      // Fallback: créer avec email temporaire basé sur clerkId
-      // L'email sera mis à jour lors de la prochaine connexion réussie
       console.warn(`Could not get email from Clerk for user ${userId}, using temporary email`)
+    }
 
+    try {
       user = await prisma.user.create({
         data: {
           clerkId: userId,
-          email: `pending-${userId}@temp.local`,
+          email: userEmail,
           onboardingCompleted: false,
         },
       })
-    } else {
-      user = await prisma.user.create({
-        data: {
-          clerkId: userId,
-          email: email,
-          onboardingCompleted: false,
-        },
-      })
+    } catch (error: any) {
+      // Race condition: un autre request a créé l'utilisateur entre-temps
+      if (error.code === 'P2002') {
+        // Récupérer l'utilisateur qui vient d'être créé par l'autre request
+        user = await prisma.user.findUnique({
+          where: { clerkId: userId },
+        })
+        if (!user) {
+          throw new Error('Failed to get or create user after race condition')
+        }
+      } else {
+        throw error
+      }
     }
   } else if (user.email.startsWith('pending-') && user.email.endsWith('@temp.local')) {
     // Mettre à jour l'email temporaire si on peut maintenant le récupérer

@@ -134,9 +134,11 @@ export default function UploadPage() {
             <li>Sélectionner la période souhaitée</li>
             <li>Cliquer sur "Exporter" → "Exporter les données du tableau"</li>
           </ol>
-          <p className="text-xs text-blue-600 mt-2">
-            💡 Astuce : Ajoutez la colonne "Nom de la campagne" pour un meilleur suivi
-          </p>
+          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800 font-medium">
+              💡 Astuce : Ajoutez la colonne "Nom de la campagne" dans votre export pour un meilleur suivi
+            </p>
+          </div>
         </Card>
       )}
 
