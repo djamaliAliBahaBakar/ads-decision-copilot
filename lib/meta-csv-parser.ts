@@ -554,16 +554,6 @@ export async function parseMetaCSV(content: string): Promise<MetaParseResult> {
     return { data, errors, warnings, detectedFormat, mappedColumns }
   }
 
-  // Debug: log les premières valeurs pour vérifier le parsing
-  if (rows.length > 0 && columnMapping.spend) {
-    const firstRow = rows[0] as Record<string, any>
-    const spendColName = columnMapping.spend
-    const rawValue = firstRow[spendColName]
-    console.log(`[CSV Parser Debug] Colonne spend: "${spendColName}"`)
-    console.log(`[CSV Parser Debug] Première valeur brute: "${rawValue}"`)
-    console.log(`[CSV Parser Debug] Parsée: ${parseNumber(rawValue)}`)
-  }
-
   // Convertir les données - utiliser les noms de colonnes directement
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i] as Record<string, any>
