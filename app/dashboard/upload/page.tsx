@@ -134,9 +134,12 @@ export default function UploadPage() {
             <li>Sélectionner la période souhaitée</li>
             <li>Cliquer sur "Exporter" → "Exporter les données du tableau"</li>
           </ol>
-          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800 font-medium">
-              💡 Astuce : Ajoutez la colonne "Nom de la campagne" dans votre export pour un meilleur suivi
+          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-1">
+            <p className="text-sm text-amber-900 font-semibold">
+              ⚠️ Ajoutez la colonne "Nº de la publicité" pour éviter les doublons
+            </p>
+            <p className="text-xs text-amber-800">
+              Dans Meta Ads Manager : cliquez sur "Colonnes" → "Personnaliser les colonnes" → cochez <strong>"Nº de la publicité"</strong> (ou "Ad ID") → Appliquer, puis exportez.
             </p>
           </div>
         </Card>

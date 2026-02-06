@@ -9,6 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Big Idea / Proposition de valeur
 > "Ton meilleur angle créatif marche 2x mieux que ton pire. Trouve-le. Décide. Économise."
 
+**Philosophy**: Ads Decision n'est pas un outil d'analyse. C'est un **outil de responsabilité**.
+
 ### Design Principles
 - **Une page = Une idée = Une action claire** (pas de mélange d'intentions)
 - Focus sur la valeur, pas les barrières (freemium = opportunité, pas frustration)
@@ -32,12 +34,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | Feature | Description | Location |
 |---------|-------------|----------|
-| **Angles Dashboard** | Vue centrée sur les angles créatifs avec CPL et performance | `/dashboard` |
-| **Decision Board** | Suggestions KILL/SCALE/HOLD basées sur les règles | `/dashboard/decisions` |
-| **Journal** | Historique des décisions avec notes | `/dashboard/journal` |
-| **Import CSV** | Upload des données Meta Ads | `/dashboard/upload` |
+| **Performance Dashboard** | Résumé des performances par pub (KPIs, top/worst performers, discipline) | `/dashboard` |
+| **Decision Board** | Suggestions KILL/SCALE/HOLD basées sur les règles + économies potentielles | `/dashboard/decisions` |
+| **Journal** | Historique des décisions avec impact réalisé | `/dashboard/journal` |
+| **Import CSV** | Upload des données Meta Ads (détection automatique format) | `/dashboard/upload` |
 | **Règles personnalisées** | Création de règles de décision | Onboarding + Settings |
-| **Tiltmeter** | Suivi de la discipline (règles suivies vs ignorées) | Dashboard + Digest |
+| **Tiltmeter** | Suivi de la discipline (règles suivies vs ignorées) - benchmark 75%+ | Dashboard + Digest |
 
 ### Freemium System
 
@@ -46,6 +48,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **FREE_PREVIEW** | 3 décisions gratuites | Par défaut (nouveaux users) |
 | **PAID** | Décisions illimitées + Digest + Tiltmeter | Abonnement Stripe |
 | **SUPERUSER** | Tout illimité + Admin | Clerk metadata `role=SUPERUSER` |
+
+**Note SUPERUSER**: Les SUPERUSER ont `isPaid=true` mais pas d'abonnement Stripe. Le bouton "Gérer mon abonnement" est masqué pour eux dans `components/subscription/subscription-settings.tsx`.
 
 **Fichiers clés:**
 - `lib/access.ts` - Logique d'accès et permissions
@@ -79,13 +83,31 @@ Weekly performance emails sent via Resend:
 - **Content**: Discipline score, savings, best/worst decisions, CPL trends
 - **User control**: Enable/disable in `/dashboard/settings`
 
-### Meta API Sync
+### Meta API Sync (MVP V0: désactivé)
 
-- **OAuth connection**: `/dashboard/settings`
-- **Manual sync**: Button in settings
+> **Note**: La connexion Meta est désactivée pour le MVP V0. Les utilisateurs importent leurs données via CSV.
+
+- **OAuth connection**: `/dashboard/settings` (commenté)
+- **Manual sync**: Button in settings (commenté)
 - **Auto sync**: Daily cron at 6 AM UTC via `/api/cron/sync-meta`
 - **Data imported**: Campaigns, ads, spend, impressions, clicks, leads, CPL, CTR
 - **Key function**: `syncMetaAdsForUser(userId)` in `app/actions/meta.ts`
+
+### CSV Import (Principal pour MVP)
+
+**Parser intelligent** (`lib/meta-csv-parser.ts`):
+- Détection automatique du format (Meta FR/EN, AdsDecision)
+- Mapping multi-langue des colonnes
+- Calcul automatique du CPL si manquant
+- Gestion des encodages cassés (UTF-8 BOM, UTF-16)
+
+**Colonnes supportées**:
+- `Nom de la publicité` / `Ad Name` → ad_name
+- `Montant dépensé (EUR)` / `Amount Spent` → spend
+- `Résultats` / `Results` → leads
+- `Coût par résultat` / `Cost per Result` → cpl
+
+**Important**: Ne pas confondre "Budget" (budget quotidien) avec "Montant dépensé" (spend réel)
 
 ### Cron Jobs (Vercel)
 
@@ -138,18 +160,22 @@ npm run prisma:seed      # Seed database (requires existing Clerk user)
 
 ## Testing
 
-Tests are located in `__tests__/` directory:
+Tests are located in `__tests__/` and `lib/__tests__/` directories:
 
 | Test File | Description |
 |-----------|-------------|
 | `lib/quota.test.ts` | Freemium quota system (3 free decisions) |
 | `lib/access.test.ts` | Access levels (FREE_PREVIEW, PAID, SUPERUSER) |
+| `lib/__tests__/csv-parser.test.ts` | CSV parsing (Meta FR/EN, validation, CPL calc) |
 | `api/cron.test.ts` | Cron authentication (Bearer token, query param) |
 | `api/stripe-webhook.test.ts` | Stripe webhook business logic |
+| `api/onboarding/__tests__/create-default-rules.test.ts` | Création règles par défaut |
 
 **Mocks**: `__tests__/mocks/prisma.ts` provides Prisma client mocks.
 
 **Setup**: `jest.setup.js` configures environment variables for tests.
+
+**Note**: Les tests API Next.js (NextRequest) testent la logique métier directement pour éviter les problèmes de polyfill Web API.
 
 ## Architecture Overview
 
@@ -159,6 +185,7 @@ All authenticated operations use the `getOrCreateUser()` helper from `lib/get-or
 - Fetches the current Clerk user ID
 - Looks up the corresponding user in Prisma by `clerkId`
 - Auto-creates the user in Prisma if not found (syncing email from Clerk)
+- **Race condition handling**: Try-catch autour de `create()` avec fallback sur `findUnique()` si erreur P2002
 - **Pattern**: Always call `getOrCreateUser()` at the start of server actions
 
 ### Middleware Configuration
@@ -214,8 +241,9 @@ The app uses Next.js Server Actions exclusively for data operations:
 | `getDecisionSuggestions()` | decisions.ts | Suggestions KILL/SCALE/HOLD |
 | `logDecision()` | decisions.ts | Sauvegarder une décision (avec check quota) |
 | `getDecisionQuota()` | decisions.ts | Quota restant (FREE: 3, PAID: illimité) |
-| `getRealizedSavings()` | decisions.ts | Économies réalisées via décisions KILL |
-| `getAnglesPerformance()` | ads.ts | Performance par angle créatif |
+| `getRealizedSavings()` | decisions.ts | Économies réalisées + potentielles |
+| `getAdsPerformanceSummary()` | ads.ts | Résumé performances par pub (top/worst, KPIs) |
+| `calculateDisciplineScore()` | rules.ts | Score discipline (% décisions conformes) |
 
 ### Database Models (Prisma)
 
@@ -242,11 +270,11 @@ The app uses Next.js Server Actions exclusively for data operations:
 app/
 ├── (auth)/              # Clerk auth pages (sign-in, sign-up)
 ├── dashboard/           # Main authenticated app
-│   ├── page.tsx         # Angles performance dashboard
+│   ├── page.tsx         # Résumé performances (KPIs, discipline, top/worst)
 │   ├── decisions/       # Decision board with suggestions
-│   ├── journal/         # Decision history
+│   ├── journal/         # Decision history with impact
 │   ├── upload/          # CSV upload for ad data
-│   └── settings/        # Account & Meta connection
+│   └── settings/        # Account settings + règles
 ├── onboarding/          # 4-step onboarding flow
 ├── cgv/                 # Terms of sale
 ├── mentions-legales/    # Legal notice
@@ -351,6 +379,33 @@ Run `npx prisma db seed` to populate test data:
 - Creates 30 days of fake ad data
 - Creates 3 default rules
 - Useful for testing decision suggestions and charts
+
+## Recent Changes (MVP V0)
+
+### Dashboard Refactoring
+- Suppression du concept "angle" (les CSV Meta n'ont pas cette info)
+- Nouvelle vue "Résumé des performances" groupée par nom de pub
+- Ajout du Discipline Widget avec benchmark "75%+"
+- Affichage "X décisions en attente" dans le header
+
+### Decision Board
+- Bandeau "économies potentielles" (~X€ ce mois-ci)
+- Calcul basé sur les pubs sous-performantes non décidées
+
+### Journal
+- Colonne "Impact" ajoutée (économies réalisées pour les KILL)
+
+### Import CSV
+- Astuce visible pour ajouter "Nom de la campagne"
+- Texte de réassurance "Colonnes détectées automatiquement"
+
+### Règles par défaut
+- 6 règles créées à l'onboarding (K1, K2, F1, F2, S1, T1)
+- Affichage avec descriptions complètes dans Settings
+
+### Bug Fixes
+- Race condition sur création user (P2002 → retry findUnique)
+- Parsing CSV: "Budget" retiré des mappings spend (conflit avec budget quotidien)
 
 ## Legal Information
 
