@@ -68,7 +68,7 @@ export function DisciplineWidget() {
         score.percentage >= 50 ? 'bg-white border-blue-300' :
         'bg-red-50 border-red-300'
       }`}>
-        <p className={`text-xs font-medium ${
+        <p className={`text-sm font-medium ${
           score.percentage >= 75 ? 'text-green-900' :
           score.percentage >= 50 ? 'text-blue-900' :
           'text-red-900'
@@ -81,7 +81,7 @@ export function DisciplineWidget() {
             ? 'En progrès — continue à suivre tes règles pour maximiser ton ROI.'
             : 'Excellente discipline — tu décides avec méthode.'}
         </p>
-        <p className="text-xs text-slate-600 mt-1">
+        <p className="text-sm text-slate-600 mt-1">
           Les comptes les plus rentables suivent leurs règles à 75%+
         </p>
       </div>

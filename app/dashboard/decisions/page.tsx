@@ -286,7 +286,7 @@ export default function DecisionsPage() {
                         {isDecided && <span className="ml-2 text-xs text-gray-500">✅</span>}
                       </div>
                       {!isDecided && ad.action === 'KILL' && (
-                        <span className="text-[10px] text-red-500 font-medium">Budget toujours actif</span>
+                        <span className="text-xs text-red-500 font-medium">Budget toujours actif</span>
                       )}
                     </td>
                     <td className="p-2 text-right font-medium">

@@ -138,7 +138,7 @@ export default function UploadPage() {
             <p className="text-sm text-amber-900 font-semibold">
               ⚠️ Ajoutez la colonne "Nº de la publicité" pour éviter les doublons
             </p>
-            <p className="text-xs text-amber-800">
+            <p className="text-sm text-amber-800">
               Dans Meta Ads Manager : cliquez sur "Colonnes" → "Personnaliser les colonnes" → cochez <strong>"Nº de la publicité"</strong> (ou "Ad ID") → Appliquer, puis exportez.
             </p>
           </div>
