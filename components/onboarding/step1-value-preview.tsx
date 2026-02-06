@@ -184,22 +184,6 @@ export default function Step1ValuePreview({ onComplete }: Step1ValuePreviewProps
         </div>
       </div>
 
-      {/* Social proof */}
-      <div
-        className={`mb-8 transition-all duration-700 delay-600 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
-      >
-        <div className="flex items-center justify-center gap-4 text-sm text-slate-500">
-          <div className="flex -space-x-2">
-            {['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-orange-500'].map((color, i) => (
-              <div key={i} className={`w-8 h-8 rounded-full ${color} border-2 border-white flex items-center justify-center text-white text-xs font-bold`}>
-                {['M', 'S', 'A', 'J'][i]}
-              </div>
-            ))}
-          </div>
-          <span>+127 infopreneurs utilisent déjà Ads Decision</span>
-        </div>
-      </div>
-
       {/* CTA Section */}
       <div
         className={`transition-all duration-700 delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
