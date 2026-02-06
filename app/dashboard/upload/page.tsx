@@ -145,6 +145,12 @@ export default function UploadPage() {
         </Card>
       )}
 
+      {!uploadResult && !file && (
+        <p className="text-center text-sm text-slate-700 font-medium">
+          Importe tes données. Ads Decision te dit quoi garder et quoi couper.
+        </p>
+      )}
+
       {!uploadResult && <Card className="p-6">
         <div className={`
           border-2 border-dashed rounded-lg p-12 text-center transition-all

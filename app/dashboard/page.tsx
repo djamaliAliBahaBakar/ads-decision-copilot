@@ -125,7 +125,7 @@ export default function DashboardPage() {
           {data.adsToDecide > 0 && (
             <span className="ml-2 inline-flex items-center gap-1.5 text-orange-600 font-medium">
               <ClipboardList className="w-4 h-4" />
-              {data.adsToDecide} décision{data.adsToDecide > 1 ? 's' : ''} en attente
+              {data.adsToDecide} pub{data.adsToDecide > 1 ? 's' : ''} sans verdict
             </span>
           )}
         </p>

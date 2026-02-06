@@ -172,6 +172,47 @@ export default function JournalPage() {
         )}
       </Card>
 
+      {/* Synthèse contextuelle */}
+      {decisions.length > 0 && (() => {
+        const killCount = decisions.filter(d => d.action === 'KILL').length
+        const totalCount = decisions.length
+        const avgConf = totalCount > 0
+          ? decisions.reduce((sum, d) => sum + (d.confidence ?? 0), 0) / totalCount
+          : 0
+
+        let message = ''
+        let color = 'text-gray-600'
+        let bg = 'bg-gray-50 border-gray-200'
+
+        if (totalCount <= 2) {
+          message = 'Peu de décisions prises — ton budget tourne sans pilote.'
+          color = 'text-amber-800'
+          bg = 'bg-amber-50 border-amber-200'
+        } else if (killCount === 0) {
+          message = 'Aucune coupe — es-tu sûr que toutes tes pubs méritent de tourner ?'
+          color = 'text-amber-800'
+          bg = 'bg-amber-50 border-amber-200'
+        } else if (avgConf < 3) {
+          message = 'Confiance faible — tes décisions manquent de conviction.'
+          color = 'text-orange-800'
+          bg = 'bg-orange-50 border-orange-200'
+        } else if (killCount >= 2 && avgConf >= 4) {
+          message = 'Bonne dynamique — tu décides avec clarté.'
+          color = 'text-green-800'
+          bg = 'bg-green-50 border-green-200'
+        } else {
+          message = 'Continue à décider régulièrement pour garder le contrôle.'
+          color = 'text-blue-800'
+          bg = 'bg-blue-50 border-blue-200'
+        }
+
+        return (
+          <div className={`p-4 rounded-lg border ${bg} slide-up`}>
+            <p className={`text-sm font-medium ${color}`}>{message}</p>
+          </div>
+        )
+      })()}
+
       {/* Stats rapides */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 hover:shadow-lg slide-up">

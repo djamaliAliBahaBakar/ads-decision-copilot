@@ -63,11 +63,25 @@ export function DisciplineWidget() {
         </div>
       </div>
 
-      <div className="mt-4 p-3 bg-white rounded border border-blue-300">
-        <p className="text-xs text-blue-900">
-          💡 Plus tu suis tes règles, meilleur est ton ROI (historiquement +10-15%)
+      <div className={`mt-4 p-3 rounded border ${
+        score.percentage >= 75 ? 'bg-green-50 border-green-300' :
+        score.percentage >= 50 ? 'bg-white border-blue-300' :
+        'bg-red-50 border-red-300'
+      }`}>
+        <p className={`text-xs font-medium ${
+          score.percentage >= 75 ? 'text-green-900' :
+          score.percentage >= 50 ? 'text-blue-900' :
+          'text-red-900'
+        }`}>
+          {score.percentage === 0
+            ? 'Aucune règle suivie — tes décisions sont probablement émotionnelles.'
+            : score.percentage < 50
+            ? 'Discipline faible — ton budget est exposé à des décisions non rationnelles.'
+            : score.percentage < 75
+            ? 'En progrès — continue à suivre tes règles pour maximiser ton ROI.'
+            : 'Excellente discipline — tu décides avec méthode.'}
         </p>
-        <p className="text-xs text-blue-700 mt-1">
+        <p className="text-xs text-slate-600 mt-1">
           Les comptes les plus rentables suivent leurs règles à 75%+
         </p>
       </div>
