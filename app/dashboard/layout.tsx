@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
+import { BetaBanner } from '@/components/layout/beta-banner'
 import { PaywallProvider } from '@/components/paywall'
 import { getOrCreateUser } from '@/lib/get-or-create-user'
 
@@ -26,6 +27,11 @@ export default async function DashboardLayout({
         <div className="lg:pl-64">
           {/* Header */}
           <Header />
+
+          {/* Beta banner */}
+          {user.isBetaUser && user.betaAccessExpiresAt && (
+            <BetaBanner expiresAt={user.betaAccessExpiresAt} />
+          )}
 
           {/* Page content */}
           <main className="py-6 px-4 sm:px-6 lg:px-8">
