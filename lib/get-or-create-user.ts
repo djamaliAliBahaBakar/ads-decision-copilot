@@ -1,6 +1,9 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 
+// Nombre max de beta users (accès gratuit 3 mois)
+const MAX_BETA_USERS = 10
+
 /**
  * Helper pour attendre un délai
  */
@@ -78,6 +81,31 @@ export async function getOrCreateUser() {
         }
       } else {
         throw error
+      }
+    }
+    // Beta: accorder l'accès gratuit aux N premiers utilisateurs
+    if (!user.isBetaUser) {
+      const totalUsers = await prisma.user.count()
+      if (totalUsers <= MAX_BETA_USERS) {
+        const betaExpiresAt = new Date()
+        betaExpiresAt.setMonth(betaExpiresAt.getMonth() + 3)
+
+        user = await prisma.user.update({
+          where: { id: user.id },
+          data: { isBetaUser: true, betaAccessExpiresAt: betaExpiresAt },
+        })
+
+        await prisma.subscription.create({
+          data: {
+            userId: user.id,
+            accessLevel: 'PAID',
+            status: 'ACTIVE',
+            plan: 'beta_free',
+            currentPeriodStart: new Date(),
+            currentPeriodEnd: betaExpiresAt,
+            isEarlyAdopter: true,
+          },
+        })
       }
     }
   } else if (user.email.startsWith('pending-') && user.email.endsWith('@temp.local')) {

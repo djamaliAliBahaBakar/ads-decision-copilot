@@ -126,6 +126,117 @@ describe('Access System', () => {
     })
   })
 
+  describe('Beta user access (free trial)', () => {
+    const setupBetaMocks = () => {
+      ;(auth as jest.Mock).mockResolvedValue({ userId: 'clerk_beta' })
+      ;(currentUser as jest.Mock).mockResolvedValue({
+        id: 'clerk_beta',
+        publicMetadata: {},
+      })
+    }
+
+    it('should return PAID for beta user with valid (non-expired) subscription', async () => {
+      setupBetaMocks()
+
+      const futureDate = new Date()
+      futureDate.setMonth(futureDate.getMonth() + 2)
+
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user_beta',
+        clerkId: 'clerk_beta',
+        subscription: {
+          id: 'sub_beta',
+          accessLevel: 'PAID',
+          status: 'ACTIVE',
+          plan: 'beta_free',
+          stripeSubscriptionId: null,
+          currentPeriodEnd: futureDate,
+          isEarlyAdopter: true,
+        },
+      })
+
+      const access = await accessModule.getAccess()
+
+      expect(access.level).toBe('PAID')
+      expect(access.isPaid).toBe(true)
+      expect(access.canCreateDecision).toBe(true)
+    })
+
+    it('should return FREE_PREVIEW for beta user whose 3 months have expired', async () => {
+      setupBetaMocks()
+
+      const pastDate = new Date('2025-01-01')
+
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user_beta',
+        clerkId: 'clerk_beta',
+        subscription: {
+          id: 'sub_beta',
+          accessLevel: 'PAID',
+          status: 'ACTIVE',
+          plan: 'beta_free',
+          stripeSubscriptionId: null,
+          currentPeriodEnd: pastDate,
+          isEarlyAdopter: true,
+        },
+      })
+
+      const access = await accessModule.getAccess()
+
+      expect(access.level).toBe('FREE_PREVIEW')
+      expect(access.isPaid).toBe(false)
+      expect(access.canCreateDecision).toBe(false)
+    })
+
+    it('should NOT expire a Stripe-paying user even if currentPeriodEnd is past', async () => {
+      setupBetaMocks()
+
+      const pastDate = new Date('2025-01-01')
+
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user_stripe',
+        clerkId: 'clerk_beta',
+        subscription: {
+          id: 'sub_stripe',
+          accessLevel: 'PAID',
+          status: 'ACTIVE',
+          plan: 'monthly',
+          stripeSubscriptionId: 'sub_stripe_123',
+          currentPeriodEnd: pastDate,
+          isEarlyAdopter: false,
+        },
+      })
+
+      const access = await accessModule.getAccess()
+
+      expect(access.level).toBe('PAID')
+      expect(access.isPaid).toBe(true)
+    })
+
+    it('should return PAID for beta subscription with no currentPeriodEnd', async () => {
+      setupBetaMocks()
+
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: 'user_beta',
+        clerkId: 'clerk_beta',
+        subscription: {
+          id: 'sub_beta',
+          accessLevel: 'PAID',
+          status: 'ACTIVE',
+          plan: 'beta_free',
+          stripeSubscriptionId: null,
+          currentPeriodEnd: null,
+          isEarlyAdopter: true,
+        },
+      })
+
+      const access = await accessModule.getAccess()
+
+      expect(access.level).toBe('PAID')
+      expect(access.isPaid).toBe(true)
+    })
+  })
+
   describe('upgradeUserToPaid', () => {
     it('should create subscription with PAID access level', async () => {
       const userId = 'user_123'

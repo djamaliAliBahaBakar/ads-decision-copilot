@@ -88,7 +88,16 @@ export async function getAccess(): Promise<AccessInfo | null> {
   if (subscription) {
     // Check if subscription is active
     if (subscription.status === 'ACTIVE') {
-      level = subscription.accessLevel
+      // Auto-expire beta subscriptions (no Stripe) whose period has ended
+      if (
+        !subscription.stripeSubscriptionId &&
+        subscription.currentPeriodEnd &&
+        subscription.currentPeriodEnd < new Date()
+      ) {
+        level = 'FREE_PREVIEW'
+      } else {
+        level = subscription.accessLevel
+      }
     } else if (subscription.status === 'PAST_DUE') {
       // Grace period: still give access but flag it
       level = subscription.accessLevel

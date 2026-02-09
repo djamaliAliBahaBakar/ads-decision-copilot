@@ -124,6 +124,37 @@ describe('Quota System', () => {
     })
   })
 
+  describe('Beta user quota behavior', () => {
+    it('should return unlimited quota for active beta user', async () => {
+      ;(getAccess as jest.Mock).mockResolvedValue({
+        level: 'PAID',
+        isPaid: true,
+        isSuperuser: false,
+      })
+
+      const quota = await decisionsModule.getDecisionQuota()
+
+      expect(quota.isPaid).toBe(true)
+      expect(quota.remaining).toBe(Infinity)
+    })
+
+    it('should return 3 free decisions for expired beta user', async () => {
+      ;(getAccess as jest.Mock).mockResolvedValue({
+        level: 'FREE_PREVIEW',
+        isPaid: false,
+        isSuperuser: false,
+      })
+
+      prismaMock.decision.count.mockResolvedValue(0)
+
+      const quota = await decisionsModule.getDecisionQuota()
+
+      expect(quota.isPaid).toBe(false)
+      expect(quota.limit).toBe(3)
+      expect(quota.remaining).toBe(3)
+    })
+  })
+
   describe('logDecision - Freemium enforcement', () => {
     const mockAd = {
       id: 'ad_123',
