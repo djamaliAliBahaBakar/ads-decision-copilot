@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **AdsDecision** is a Meta advertising decision support system that helps marketers make data-driven decisions about their ad campaigns. The app tracks ad performance, suggests actions (KILL, SCALE, HOLD, TEST, FIX) based on user-defined rules, and measures discipline through a "Tiltmeter" system that tracks whether users follow their own rules.
 
-### Big Idea / Proposition de valeur
+### Big Idea / Proposition de valeur /*:/
 > "Ton meilleur angle créatif marche 2x mieux que ton pire. Trouve-le. Décide. Économise."
 
 **Philosophy**: Ads Decision n'est pas un outil d'analyse. C'est un **outil de responsabilité**.
