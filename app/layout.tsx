@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description:
     'Prenez des décisions data-driven pour vos campagnes Meta Ads. Automatisez vos règles marketing et optimisez votre ROI.',
   keywords: ['Meta Ads', 'Facebook Ads', 'Marketing Automation', 'ROI', 'Decision Support'],
+  other: {
+    'facebook-domain-verification': 'ipfsfra5npowvshlzy5nuvns0i3hh9',
+  },
 }
 
 export default function RootLayout({
