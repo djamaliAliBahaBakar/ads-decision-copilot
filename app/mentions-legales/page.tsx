@@ -30,8 +30,11 @@ export default function MentionsLegalesPage() {
               Le site <strong>AdsDecision</strong> (accessible à l'adresse adsdecision.com) est édité par :
             </p>
             <ul className="list-none pl-0 text-slate-700 space-y-1">
-              <li><strong>Nom :</strong> Djamali Ali baha bakar</li>
-              <li><strong>Statut :</strong> Auto-entrepreneur</li>
+              <li><strong>Entreprise :</strong> ALI BAHA BAKAR</li>
+              <li><strong>Statut :</strong> Entrepreneur individuel</li>
+              <li><strong>SIREN :</strong> 477 844 641</li>
+              <li><strong>SIRET :</strong> 477 844 641 00027</li>
+              <li><strong>Adresse :</strong> 19 Rue Maryse Bastié, 78300 Poissy, France</li>
               <li><strong>Email :</strong> contact@adsdecision.com</li>
             </ul>
           </section>
