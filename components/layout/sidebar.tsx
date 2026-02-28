@@ -177,7 +177,7 @@ export function Sidebar() {
             </div>
 
             {/* Legal links */}
-            <div className="flex items-center justify-center gap-3 text-xs text-gray-500">
+            <div className="flex items-center justify-center gap-3 text-xs text-gray-500 mb-2">
               <Link href="/cgv" className="hover:text-gray-700 hover:underline">
                 CGV
               </Link>
@@ -185,6 +185,12 @@ export function Sidebar() {
               <Link href="/mentions-legales" className="hover:text-gray-700 hover:underline">
                 Mentions légales
               </Link>
+            </div>
+
+            {/* Company info */}
+            <div className="text-center text-xs text-gray-400 leading-relaxed">
+              <p>ALI BAHA BAKAR — Entrepreneur individuel</p>
+              <p>SIREN : 477 844 641</p>
             </div>
           </div>
         </div>
